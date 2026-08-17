@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ink: #221c17;
+  --parchment: #f3ece0;
+  --parchment-dim: #e9e0d0;
+  --clay: #9c4a2c;
+  --moss: #5b6b4d;
+  --gold: #b8873b;
+  --wine: #4a2226;
+  --line: rgba(34, 28, 23, 0.14);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--parchment);
+  color: var(--ink);
+}
+
+/* "duo" split solid/outline text effect — signature Dopa treatment for
+   emphasized words, echoing the logo's duotone wordmark. Usage:
+   <span class="duo" data-text="otoño">otoño</span> */
+.duo {
+  position: relative;
+  display: inline-block;
+  color: transparent;
+  -webkit-text-stroke: 1.4px currentColor;
+  text-stroke: 1.4px currentColor;
+  -webkit-text-stroke-color: var(--clay);
+}
+.duo::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 52%;
+  overflow: hidden;
+  color: var(--clay);
+  -webkit-text-stroke: 0;
+  white-space: nowrap;
+}
+.testimonials .duo,
+.closer .duo {
+  -webkit-text-stroke-color: var(--gold);
+}
+.testimonials .duo::before,
+.closer .duo::before {
+  color: var(--gold);
+}
+
+.fall-tone {
+  filter: sepia(0.28) saturate(1.35) hue-rotate(-8deg) contrast(1.04) brightness(0.96);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes slidein {
+  from {
+    opacity: 0.2;
+    transform: translateX(var(--sdir, 20px)) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
