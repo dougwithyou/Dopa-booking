@@ -216,31 +216,56 @@ export interface PageView {
   created_at: string;
 }
 
+// `@supabase/supabase-js`'s generic client infers row/insert/update types
+// from `Database['public']['Tables'][name]`, which must structurally match
+// its internal `GenericTable` (Row/Insert/Update/Relationships) — and the
+// client generic itself expects sibling `Views`/`Functions`/`Enums`/
+// `CompositeTypes` keys on the schema object. Omitting any of these makes
+// every `.select()`/`.insert()` call infer `never`. Keep this shape if you
+// regenerate via `supabase gen types typescript` later — it emits the same
+// structure.
+type Relationships = [];
+
 export interface Database {
   public: {
     Tables: {
-      studios: { Row: Studio; Insert: Partial<Studio>; Update: Partial<Studio> };
-      studio_admins: { Row: StudioAdmin; Insert: Partial<StudioAdmin>; Update: Partial<StudioAdmin> };
-      locations: { Row: Location; Insert: Partial<Location>; Update: Partial<Location> };
-      landing_pages: { Row: LandingPage; Insert: Partial<LandingPage>; Update: Partial<LandingPage> };
+      studios: { Row: Studio; Insert: Partial<Studio>; Update: Partial<Studio>; Relationships: Relationships };
+      studio_admins: { Row: StudioAdmin; Insert: Partial<StudioAdmin>; Update: Partial<StudioAdmin>; Relationships: Relationships };
+      locations: { Row: Location; Insert: Partial<Location>; Update: Partial<Location>; Relationships: Relationships };
+      landing_pages: { Row: LandingPage; Insert: Partial<LandingPage>; Update: Partial<LandingPage>; Relationships: Relationships };
       landing_page_locations: {
         Row: { landing_page_id: string; location_id: string };
         Insert: { landing_page_id: string; location_id: string };
         Update: { landing_page_id?: string; location_id?: string };
+        Relationships: Relationships;
       };
-      availability_slots: { Row: AvailabilitySlot; Insert: Partial<AvailabilitySlot>; Update: Partial<AvailabilitySlot> };
-      holds: { Row: Hold; Insert: Partial<Hold>; Update: Partial<Hold> };
-      clients: { Row: Client; Insert: Partial<Client>; Update: Partial<Client> };
-      discount_codes: { Row: DiscountCode; Insert: Partial<DiscountCode>; Update: Partial<DiscountCode> };
-      products: { Row: Product; Insert: Partial<Product>; Update: Partial<Product> };
+      availability_slots: { Row: AvailabilitySlot; Insert: Partial<AvailabilitySlot>; Update: Partial<AvailabilitySlot>; Relationships: Relationships };
+      holds: { Row: Hold; Insert: Partial<Hold>; Update: Partial<Hold>; Relationships: Relationships };
+      clients: { Row: Client; Insert: Partial<Client>; Update: Partial<Client>; Relationships: Relationships };
+      discount_codes: { Row: DiscountCode; Insert: Partial<DiscountCode>; Update: Partial<DiscountCode>; Relationships: Relationships };
+      products: { Row: Product; Insert: Partial<Product>; Update: Partial<Product>; Relationships: Relationships };
       landing_page_products: {
         Row: { landing_page_id: string; product_id: string };
         Insert: { landing_page_id: string; product_id: string };
         Update: { landing_page_id?: string; product_id?: string };
+        Relationships: Relationships;
       };
-      bookings: { Row: Booking; Insert: Partial<Booking>; Update: Partial<Booking> };
-      upsell_orders: { Row: UpsellOrder; Insert: Partial<UpsellOrder>; Update: Partial<UpsellOrder> };
-      page_views: { Row: PageView; Insert: Partial<PageView>; Update: Partial<PageView> };
+      bookings: { Row: Booking; Insert: Partial<Booking>; Update: Partial<Booking>; Relationships: Relationships };
+      upsell_orders: { Row: UpsellOrder; Insert: Partial<UpsellOrder>; Update: Partial<UpsellOrder>; Relationships: Relationships };
+      page_views: { Row: PageView; Insert: Partial<PageView>; Update: Partial<PageView>; Relationships: Relationships };
     };
+    Views: Record<string, never>;
+    Functions: {
+      slot_is_available: {
+        Args: { p_slot_id: string };
+        Returns: boolean;
+      };
+      is_studio_admin: {
+        Args: { p_studio_id: string };
+        Returns: boolean;
+      };
+    };
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }

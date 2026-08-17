@@ -36,7 +36,7 @@ export function getStripe(): Stripe {
       throw new Error('STRIPE_SECRET_KEY is not set');
     }
     cachedStripe = new Stripe(secretKey, {
-      apiVersion: STRIPE_API_VERSION as Stripe.LatestApiVersion,
+      apiVersion: STRIPE_API_VERSION as Stripe.StripeConfig['apiVersion'],
       typescript: true,
       appInfo: { name: 'Dopa Studio Booking' },
     });
