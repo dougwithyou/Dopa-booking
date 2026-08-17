@@ -1,12 +1,15 @@
 import { getRequestConfig } from 'next-intl/server';
-import { hasLocale } from 'next-intl';
 import { routing } from './routing';
+
+// `hasLocale` isn't exported by the installed next-intl version (3.26.5) —
+// do the same check by hand instead of pulling it in.
+function isSupportedLocale(value: string | undefined): value is (typeof routing.locales)[number] {
+  return !!value && (routing.locales as readonly string[]).includes(value);
+}
 
 export default getRequestConfig(async ({ requestLocale }) => {
   const requested = await requestLocale;
-  const locale = hasLocale(routing.locales, requested)
-    ? requested
-    : routing.defaultLocale;
+  const locale = isSupportedLocale(requested) ? requested : routing.defaultLocale;
 
   return {
     locale,

@@ -270,19 +270,27 @@ export default function LandingPageEditor({
     const ops: Promise<unknown>[] = [];
     if (locationsToAdd.length)
       ops.push(
-        supabase.from('landing_page_locations').insert(locationsToAdd.map((location_id) => ({ landing_page_id: page.id, location_id })))
+        Promise.resolve(
+          supabase.from('landing_page_locations').insert(locationsToAdd.map((location_id) => ({ landing_page_id: page.id, location_id })))
+        )
       );
     if (locationsToRemove.length)
       ops.push(
-        supabase.from('landing_page_locations').delete().eq('landing_page_id', page.id).in('location_id', locationsToRemove)
+        Promise.resolve(
+          supabase.from('landing_page_locations').delete().eq('landing_page_id', page.id).in('location_id', locationsToRemove)
+        )
       );
     if (productsToAdd.length)
       ops.push(
-        supabase.from('landing_page_products').insert(productsToAdd.map((product_id) => ({ landing_page_id: page.id, product_id })))
+        Promise.resolve(
+          supabase.from('landing_page_products').insert(productsToAdd.map((product_id) => ({ landing_page_id: page.id, product_id })))
+        )
       );
     if (productsToRemove.length)
       ops.push(
-        supabase.from('landing_page_products').delete().eq('landing_page_id', page.id).in('product_id', productsToRemove)
+        Promise.resolve(
+          supabase.from('landing_page_products').delete().eq('landing_page_id', page.id).in('product_id', productsToRemove)
+        )
       );
 
     await Promise.all(ops);

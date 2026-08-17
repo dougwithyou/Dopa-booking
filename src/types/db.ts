@@ -5,7 +5,7 @@
 
 export type Locale = 'en' | 'es';
 
-export interface Studio {
+export type Studio = {
   id: string;
   name: string;
   slug: string;
@@ -21,16 +21,16 @@ export interface Studio {
   hold_duration_minutes: number;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface StudioAdmin {
+export type StudioAdmin = {
   user_id: string;
   studio_id: string;
   role: 'owner' | 'staff';
   created_at: string;
-}
+};
 
-export interface Location {
+export type Location = {
   id: string;
   studio_id: string;
   name: string;
@@ -40,32 +40,32 @@ export interface Location {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface GalleryPhoto {
+export type GalleryPhoto = {
   url: string;
   tag_en: string;
   tag_es: string;
   order: number;
-}
+};
 
-export interface Testimonial {
+export type Testimonial = {
   quote_en: string;
   quote_es: string;
   author: string;
   order: number;
-}
+};
 
-export interface LandingPageTheme {
+export type LandingPageTheme = {
   primary_color?: string;
   accent_color?: string;
   ink_color?: string;
   parchment_color?: string;
-}
+};
 
 export type LandingPageStatus = 'draft' | 'published' | 'archived';
 
-export interface LandingPage {
+export type LandingPage = {
   id: string;
   studio_id: string;
   slug: string;
@@ -98,18 +98,18 @@ export interface LandingPage {
 
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface AvailabilitySlot {
+export type AvailabilitySlot = {
   id: string;
   location_id: string;
   start_time: string;
   end_time: string;
   is_blocked: boolean;
   created_at: string;
-}
+};
 
-export interface Hold {
+export type Hold = {
   id: string;
   slot_id: string;
   client_email: string | null;
@@ -119,9 +119,9 @@ export interface Hold {
   expires_at: string;
   released: boolean;
   created_at: string;
-}
+};
 
-export interface Client {
+export type Client = {
   id: string;
   studio_id: string;
   name: string | null;
@@ -130,11 +130,11 @@ export interface Client {
   notes: string | null;
   created_at: string;
   updated_at: string;
-}
+};
 
 export type DiscountType = 'percent' | 'fixed';
 
-export interface DiscountCode {
+export type DiscountCode = {
   id: string;
   studio_id: string;
   code: string;
@@ -148,14 +148,14 @@ export interface DiscountCode {
   times_used: number;
   is_active: boolean;
   created_at: string;
-}
+};
 
-export interface ProductImage {
+export type ProductImage = {
   url: string;
   order: number;
-}
+};
 
-export interface Product {
+export type Product = {
   id: string;
   studio_id: string;
   name: string;
@@ -166,12 +166,12 @@ export interface Product {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-}
+};
 
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled';
 export type PaymentMethod = 'stripe' | 'cash' | 'other';
 
-export interface Booking {
+export type Booking = {
   id: string;
   studio_id: string;
   landing_page_id: string | null;
@@ -191,11 +191,11 @@ export interface Booking {
   created_by_admin: boolean;
   created_at: string;
   updated_at: string;
-}
+};
 
 export type UpsellOrderStatus = 'pending' | 'paid' | 'cancelled';
 
-export interface UpsellOrder {
+export type UpsellOrder = {
   id: string;
   booking_id: string;
   product_id: string;
@@ -206,15 +206,15 @@ export interface UpsellOrder {
   stripe_checkout_session_id: string | null;
   status: UpsellOrderStatus;
   created_at: string;
-}
+};
 
-export interface PageView {
+export type PageView = {
   id: string;
   landing_page_id: string;
   promo_param: string | null;
   locale: string | null;
   created_at: string;
-}
+};
 
 // `@supabase/supabase-js`'s generic client infers row/insert/update types
 // from `Database['public']['Tables'][name]`, which must structurally match
@@ -227,6 +227,12 @@ export interface PageView {
 type Relationships = [];
 
 export interface Database {
+  // Recent @supabase/supabase-js (2.5x+) reads this marker to resolve the
+  // Postgrest client's version-specific generics; without it every table's
+  // Row/Insert/Update types collapse to `never`.
+  __InternalSupabase: {
+    PostgrestVersion: '12';
+  };
   public: {
     Tables: {
       studios: { Row: Studio; Insert: Partial<Studio>; Update: Partial<Studio>; Relationships: Relationships };

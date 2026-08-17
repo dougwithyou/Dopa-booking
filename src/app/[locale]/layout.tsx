@@ -1,11 +1,17 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Poppins, Montserrat } from 'next/font/google';
-import { NextIntlClientProvider, hasLocale } from 'next-intl';
+import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import '../globals.css';
+
+// `hasLocale` isn't exported by the installed next-intl version (3.26.5) —
+// do the same check by hand instead of pulling it in.
+function isSupportedLocale(value: string): value is (typeof routing.locales)[number] {
+  return (routing.locales as readonly string[]).includes(value);
+}
 
 const poppins = Poppins({
   weight: ['800', '900'],
@@ -37,7 +43,7 @@ export default async function LocaleLayout({
   children: ReactNode;
   params: { locale: string };
 }) {
-  if (!hasLocale(routing.locales, locale)) {
+  if (!isSupportedLocale(locale)) {
     notFound();
   }
 
