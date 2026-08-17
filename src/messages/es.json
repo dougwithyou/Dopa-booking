@@ -1,0 +1,120 @@
+{
+  "home": {
+    "placeholderTitle": "Dopa Studio",
+    "placeholderBody": "Todavía no hay páginas de sesión publicadas — vuelve pronto."
+  },
+  "landing": {
+    "topmark": {
+      "region": "DMV"
+    },
+    "hero": {
+      "headlineFallback": "Tu sesión, **capturada** con cuidado.",
+      "ctaPrimaryDefault": "Reservar mi sesión",
+      "ctaSecondaryDefault": "Ver sesiones anteriores",
+      "scrollCue": "Desliza"
+    },
+    "gallery": {
+      "eyebrow": "Temporada 2025",
+      "headingDefault": "Momentos **reales**, luz real.",
+      "close": "Cerrar",
+      "prev": "Anterior",
+      "next": "Siguiente"
+    },
+    "testimonials": {
+      "eyebrow": "Palabras de clientes",
+      "heading": "Confianza **construida** sesión a sesión."
+    },
+    "about": {
+      "eyebrow": "Quiénes somos",
+      "signature": "{studio}, DMV"
+    },
+    "closer": {
+      "eyebrow": "Última oportunidad",
+      "headingDefault": "Tu sesión, **con descuento**.",
+      "ticketLabel": "{value} de descuento · aplicado automáticamente",
+      "hours": "Horas",
+      "minutes": "Min",
+      "seconds": "Seg",
+      "cta": "Reservar mi fecha ahora"
+    },
+    "footer": {
+      "tagline": "hidopastudio.com · @hidopastudio · Washington DC / MD / VA"
+    }
+  },
+  "booking": {
+    "title": "Reserva tu sesión",
+    "steps": {
+      "location": "Ubicación",
+      "datetime": "Fecha y hora",
+      "contact": "Tus datos",
+      "checkout": "Confirmar"
+    },
+    "location": {
+      "heading": "Elige una ubicación",
+      "empty": "No hay ubicaciones disponibles para esta sesión en este momento.",
+      "next": "Continuar"
+    },
+    "datetime": {
+      "heading": "Elige fecha y hora",
+      "back": "Atrás",
+      "loading": "Cargando horarios disponibles…",
+      "empty": "No hay horarios disponibles en esta ubicación — prueba con otra ubicación.",
+      "error": "No pudimos cargar la disponibilidad. Intenta de nuevo.",
+      "retry": "Reintentar",
+      "selectDate": "Selecciona una fecha",
+      "selectTime": "Selecciona una hora",
+      "next": "Continuar"
+    },
+    "contact": {
+      "heading": "Tus datos",
+      "back": "Atrás",
+      "name": "Nombre completo",
+      "namePlaceholder": "Ej. María López",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "tu@correo.com",
+      "phone": "Teléfono",
+      "phonePlaceholder": "(555) 555-5555",
+      "submit": "Reservar mi cupo",
+      "submitting": "Reservando tu cupo…",
+      "errorRequired": "Por favor completa todos los campos.",
+      "errorEmail": "Por favor ingresa un correo electrónico válido.",
+      "errorGeneric": "Algo salió mal. Intenta de nuevo.",
+      "errorConflict": "Alguien acaba de reservar ese horario — por favor elige otro."
+    },
+    "checkout": {
+      "heading": "Ya casi",
+      "holdNotice": "Tu horario está reservado por:",
+      "expired": "Tu reserva temporal expiró. Por favor elige un nuevo horario.",
+      "proceed": "Continuar al pago",
+      "processing": "Redirigiendo al pago…",
+      "chooseAgain": "Elegir un nuevo horario",
+      "errorGeneric": "Algo salió mal al iniciar el pago. Intenta de nuevo."
+    },
+    "summary": {
+      "location": "Ubicación",
+      "when": "Cuándo"
+    }
+  },
+  "upsell": {
+    "title": "Agrega a tu sesión",
+    "subtitle": "Algunos favoritos de clientes anteriores — completamente opcional.",
+    "qty": "Cant.",
+    "continue": "Continuar al pago",
+    "processing": "Redirigiendo al pago…",
+    "skip": "No, gracias, continuar sin agregar",
+    "empty": "No hay extras disponibles por ahora.",
+    "loading": "Cargando…",
+    "errorGeneric": "Algo salió mal. Intenta de nuevo."
+  },
+  "confirmation": {
+    "title": "¡Ya estás reservado/a!",
+    "body": "Gracias — no podemos esperar a trabajar contigo. Una confirmación va en camino a tu correo, y te contactaremos con cualquier detalle que necesites antes de tu sesión.",
+    "bookingLabel": "Referencia de reserva",
+    "backHome": "Volver a Dopa Studio"
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "body": "Esta sesión pudo haber terminado, o el enlace no es correcto. Consulta con tu fotógrafo para obtener el enlace de reserva más reciente.",
+    "backHome": "Volver a Dopa Studio"
+  }
+}

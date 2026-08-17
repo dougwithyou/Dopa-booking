@@ -1,0 +1,120 @@
+{
+  "home": {
+    "placeholderTitle": "Dopa Studio",
+    "placeholderBody": "No published session pages yet — check back soon."
+  },
+  "landing": {
+    "topmark": {
+      "region": "DMV"
+    },
+    "hero": {
+      "headlineFallback": "Your session, **beautifully** captured.",
+      "ctaPrimaryDefault": "Book my session",
+      "ctaSecondaryDefault": "See past sessions",
+      "scrollCue": "Scroll"
+    },
+    "gallery": {
+      "eyebrow": "Season 2025",
+      "headingDefault": "Real **moments**, real light.",
+      "close": "Close",
+      "prev": "Previous",
+      "next": "Next"
+    },
+    "testimonials": {
+      "eyebrow": "Client words",
+      "heading": "Trust **built** session by session."
+    },
+    "about": {
+      "eyebrow": "Who we are",
+      "signature": "{studio}, DMV"
+    },
+    "closer": {
+      "eyebrow": "Last chance",
+      "headingDefault": "Your session, **with a discount**.",
+      "ticketLabel": "{value} off · applied automatically",
+      "hours": "Hours",
+      "minutes": "Min",
+      "seconds": "Sec",
+      "cta": "Book my date now"
+    },
+    "footer": {
+      "tagline": "hidopastudio.com · @hidopastudio · Washington DC / MD / VA"
+    }
+  },
+  "booking": {
+    "title": "Book your session",
+    "steps": {
+      "location": "Location",
+      "datetime": "Date & time",
+      "contact": "Your info",
+      "checkout": "Confirm"
+    },
+    "location": {
+      "heading": "Choose a location",
+      "empty": "No locations are available for this session right now.",
+      "next": "Continue"
+    },
+    "datetime": {
+      "heading": "Pick a date & time",
+      "back": "Back",
+      "loading": "Loading available times…",
+      "empty": "No open times at this location right now — try another location.",
+      "error": "We couldn't load availability. Please try again.",
+      "retry": "Retry",
+      "selectDate": "Select a date",
+      "selectTime": "Select a time",
+      "next": "Continue"
+    },
+    "contact": {
+      "heading": "Your info",
+      "back": "Back",
+      "name": "Full name",
+      "namePlaceholder": "Jane Doe",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "phone": "Phone",
+      "phonePlaceholder": "(555) 555-5555",
+      "submit": "Hold my spot",
+      "submitting": "Holding your spot…",
+      "errorRequired": "Please fill in all fields.",
+      "errorEmail": "Please enter a valid email address.",
+      "errorGeneric": "Something went wrong. Please try again.",
+      "errorConflict": "Someone just booked that time — please pick another."
+    },
+    "checkout": {
+      "heading": "Almost there",
+      "holdNotice": "Your time is held for:",
+      "expired": "Your hold has expired. Please pick a new time.",
+      "proceed": "Proceed to payment",
+      "processing": "Redirecting to payment…",
+      "chooseAgain": "Choose a new time",
+      "errorGeneric": "Something went wrong starting checkout. Please try again."
+    },
+    "summary": {
+      "location": "Location",
+      "when": "When"
+    }
+  },
+  "upsell": {
+    "title": "Add to your session",
+    "subtitle": "A few favorites from past clients — entirely optional.",
+    "qty": "Qty",
+    "continue": "Continue to payment",
+    "processing": "Redirecting to payment…",
+    "skip": "No thanks, skip this",
+    "empty": "No add-ons available right now.",
+    "loading": "Loading…",
+    "errorGeneric": "Something went wrong. Please try again."
+  },
+  "confirmation": {
+    "title": "You're booked!",
+    "body": "Thank you — we can't wait to work with you. A confirmation is on its way to your inbox, and we'll be in touch with any details you need before your session.",
+    "bookingLabel": "Booking reference",
+    "backHome": "Back to Dopa Studio"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "This session may have wrapped up, or the link is off. Check back with your photographer for the latest booking link.",
+    "backHome": "Back to Dopa Studio"
+  }
+}
