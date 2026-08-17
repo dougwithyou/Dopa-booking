@@ -1,6 +1,6 @@
 import type { AvailabilitySlot, Booking, Client, Hold, LandingPage, Location, Locale } from '@/types/db';
 import { formatCurrency, formatSlotDateTime } from './format';
-import { detailsBlockHtml, renderHtmlEmail } from './layout';
+import { detailsBlockHtml, escapeHtml, renderHtmlEmail } from './layout';
 
 export interface EmailContent {
   subject: string;
@@ -98,7 +98,7 @@ export function buildBookingConfirmationEmail(params: {
     preheading: copy.intro,
     heading: copy.heading,
     bodyHtml: `
-      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${copy.greeting(clientName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.greeting(clientName))}</p>
       <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${copy.intro}</p>
       ${detailsBlockHtml(detailsRows)}
       <p style="margin:16px 0 4px;font-size:15px;line-height:1.5;">${copy.closing}</p>
@@ -157,7 +157,7 @@ export function buildAdminBookingNotificationEmail(params: {
   const html = renderHtmlEmail({
     heading: 'New booking',
     bodyHtml: `
-      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${summary}</p>
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(summary)}</p>
       ${detailsBlockHtml(detailsRows)}
     `,
   });
@@ -225,7 +225,7 @@ export function buildHoldExpirationReminderEmail(params: {
     preheading: copy.intro,
     heading: copy.heading,
     bodyHtml: `
-      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${copy.greeting(clientName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.greeting(clientName))}</p>
       <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${copy.intro}</p>
       ${detailsBlockHtml(detailsRows)}
       <p style="margin:16px 0 4px;font-size:15px;line-height:1.5;">${copy.closing}</p>
