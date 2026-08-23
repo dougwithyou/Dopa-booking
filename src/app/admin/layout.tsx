@@ -36,9 +36,9 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   return (
     <html lang="en">
       <body className="min-h-screen bg-gray-50 text-gray-900 antialiased">
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen flex-col md:flex-row">
           <Sidebar userEmail={user.email ?? ''} />
-          <main className="min-w-0 flex-1 overflow-x-hidden px-6 py-6 lg:px-10 lg:py-8">{children}</main>
+          <main className="min-w-0 flex-1 overflow-x-hidden px-4 py-5 sm:px-6 sm:py-6 lg:px-10 lg:py-8">{children}</main>
         </div>
       </body>
     </html>
