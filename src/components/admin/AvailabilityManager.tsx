@@ -73,9 +73,11 @@ function generateBulkSlots({
 export default function AvailabilityManager({
   locationId,
   initialSlots,
+  bookedSlotIds = new Set(),
 }: {
   locationId: string;
   initialSlots: AvailabilitySlot[];
+  bookedSlotIds?: Set<string>;
 }) {
   const [slots, setSlots] = useState(initialSlots);
   const [date, setDate] = useState('');
@@ -208,8 +210,11 @@ export default function AvailabilityManager({
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Delete this slot?')) return;
+  async function handleDelete(id: string, booked: boolean) {
+    const message = booked
+      ? "This slot has a booking on it. Deleting it will NOT cancel the booking or refund the client — it just removes the time slot record. Delete anyway?"
+      : 'Delete this slot?';
+    if (!confirm(message)) return;
     const supabase = createClient();
     const { error: deleteError } = await supabase.from('availability_slots').delete().eq('id', id);
     if (deleteError) {
@@ -348,31 +353,49 @@ export default function AvailabilityManager({
           </thead>
           <tbody className="divide-y divide-gray-100">
             {grouped.flatMap(([day, daySlots]) =>
-              daySlots.map((s, i) => (
-                <tr key={s.id}>
-                  <td className={tdCls}>{i === 0 ? formatDate(s.start_time) : ''}</td>
-                  <td className={tdCls}>
-                    {formatTime(s.start_time)} – {formatTime(s.end_time)}
-                  </td>
-                  <td className={tdCls}>
-                    <button onClick={() => handleToggleBlock(s)}>
-                      <span className={badgeCls(s.is_blocked ? 'red' : 'green')}>
-                        {s.is_blocked ? 'Blocked' : 'Open'}
-                      </span>
-                    </button>
-                  </td>
-                  <td className={tdCls}>
-                    <div className="flex justify-end gap-1">
-                      <button className={btnGhost} onClick={() => handleToggleBlock(s)} title={s.is_blocked ? 'Unblock' : 'Block'}>
-                        {s.is_blocked ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Ban className="h-3.5 w-3.5" />}
-                      </button>
-                      <button className={btnDanger} onClick={() => handleDelete(s.id)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+              daySlots.map((s, i) => {
+                const booked = bookedSlotIds.has(s.id);
+                return (
+                  <tr key={s.id}>
+                    <td className={tdCls}>{i === 0 ? formatDate(s.start_time) : ''}</td>
+                    <td className={tdCls}>
+                      {formatTime(s.start_time)} – {formatTime(s.end_time)}
+                    </td>
+                    <td className={tdCls}>
+                      {booked ? (
+                        <span className={badgeCls('blue')} title="A client has already booked or is checking out for this slot.">
+                          Booked
+                        </span>
+                      ) : (
+                        <button onClick={() => handleToggleBlock(s)}>
+                          <span className={badgeCls(s.is_blocked ? 'red' : 'green')}>
+                            {s.is_blocked ? 'Blocked' : 'Open'}
+                          </span>
+                        </button>
+                      )}
+                    </td>
+                    <td className={tdCls}>
+                      <div className="flex justify-end gap-1">
+                        <button
+                          className={btnGhost}
+                          onClick={() => handleToggleBlock(s)}
+                          disabled={booked}
+                          title={booked ? 'Already booked — cannot block' : s.is_blocked ? 'Unblock' : 'Block'}
+                        >
+                          {s.is_blocked ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Ban className="h-3.5 w-3.5" />}
+                        </button>
+                        <button
+                          className={btnDanger}
+                          onClick={() => handleDelete(s.id, booked)}
+                          title={booked ? 'Already booked — deleting will not cancel the booking' : 'Delete'}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
             {slots.length === 0 && (
               <tr>

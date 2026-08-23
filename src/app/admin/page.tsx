@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { CalendarClock, DollarSign, Ticket, TrendingUp } from 'lucide-react';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { fetchEnrichedBookings, getStudioId } from '@/components/admin/lib/data';
+import { fetchEnrichedBookings, fetchEnrichedUpsellOrders, getStudioId } from '@/components/admin/lib/data';
 import {
   bookingsThisMonthCount,
+  lifetimeRevenue,
   monthlyRevenue,
   revenueBySessionType,
   revenueThisMonth,
@@ -22,9 +23,10 @@ export default async function AdminDashboardPage() {
   const supabase = await createServerSupabaseClient();
   const studioId = await getStudioId(supabase);
   const bookings = await fetchEnrichedBookings(supabase, studioId);
+  const upsellOrders = await fetchEnrichedUpsellOrders(supabase, studioId);
 
-  const revenue = monthlyRevenue(bookings, 12);
-  const clients = topClients(bookings, 5);
+  const revenue = monthlyRevenue(bookings, 12, upsellOrders);
+  const clients = topClients(bookings, 5, upsellOrders);
   const bySessionType = revenueBySessionType(bookings);
 
   return (
@@ -35,14 +37,10 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Revenue this month" value={formatCents(revenueThisMonth(bookings))} icon={DollarSign} />
+        <StatCard label="Revenue this month" value={formatCents(revenueThisMonth(bookings, upsellOrders))} icon={DollarSign} />
         <StatCard label="Bookings this month" value={String(bookingsThisMonthCount(bookings))} icon={Ticket} />
         <StatCard label="Upcoming sessions" value={String(upcomingSessionsCount(bookings))} icon={CalendarClock} />
-        <StatCard
-          label="Lifetime revenue"
-          value={formatCents(bookings.filter((b) => b.status === 'confirmed').reduce((s, b) => s + b.amount_cents, 0))}
-          icon={TrendingUp}
-        />
+        <StatCard label="Lifetime revenue" value={formatCents(lifetimeRevenue(bookings, upsellOrders))} icon={TrendingUp} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

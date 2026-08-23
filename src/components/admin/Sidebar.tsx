@@ -15,6 +15,7 @@ import {
   Settings,
   Menu,
   X,
+  PackageCheck,
 } from 'lucide-react';
 import SignOutButton from './SignOutButton';
 
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { href: '/admin/landing-pages', label: 'Landing Pages', icon: FileText },
   { href: '/admin/discount-codes', label: 'Discount Codes', icon: Tag },
   { href: '/admin/products', label: 'Products', icon: Package },
+  { href: '/admin/orders', label: 'Orders', icon: PackageCheck },
   { href: '/admin/crm', label: 'CRM', icon: Users },
   { href: '/admin/stats', label: 'Stats', icon: BarChart3 },
   { href: '/admin/settings', label: 'Settings', icon: Settings },

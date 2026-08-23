@@ -206,6 +206,7 @@ export type UpsellOrder = {
   stripe_payment_intent_id: string | null;
   stripe_checkout_session_id: string | null;
   status: UpsellOrderStatus;
+  fulfilled_at: string | null;
   created_at: string;
 };
 

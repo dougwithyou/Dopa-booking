@@ -2,7 +2,7 @@
 // happens in JS over already-fetched rows (small-business data volumes),
 // keeping the Supabase queries simple and fully typed.
 
-import type { EnrichedBooking } from './data';
+import type { EnrichedBooking, EnrichedUpsellOrder } from './data';
 import { monthKey } from './format';
 
 export function isConfirmedPaid(b: EnrichedBooking): boolean {
@@ -21,8 +21,11 @@ export interface RevenuePoint {
 }
 
 /** Monthly revenue from confirmed bookings, using paid_at (falls back to
- * created_at if paid_at is missing), over the trailing `months` months. */
-export function monthlyRevenue(bookings: EnrichedBooking[], months = 12): RevenuePoint[] {
+ * created_at if paid_at is missing), over the trailing `months` months.
+ * Paid upsell orders (photobooks, prints, etc.) are folded in by their
+ * purchase date so "monthly revenue" reflects everything actually charged,
+ * not just the base session price. */
+export function monthlyRevenue(bookings: EnrichedBooking[], months = 12, upsellOrders: EnrichedUpsellOrder[] = []): RevenuePoint[] {
   const now = new Date();
   const keys: string[] = [];
   for (let i = months - 1; i >= 0; i--) {
@@ -37,15 +40,31 @@ export function monthlyRevenue(bookings: EnrichedBooking[], months = 12): Revenu
     const key = monthKey(iso);
     if (key in totals) totals[key] += b.amount_cents;
   }
+  for (const o of upsellOrders) {
+    const key = monthKey(o.created_at);
+    if (key in totals) totals[key] += o.amount_cents;
+  }
 
   return keys.map((k) => ({ month: k, cents: totals[k] }));
 }
 
-export function revenueThisMonth(bookings: EnrichedBooking[]): number {
+export function revenueThisMonth(bookings: EnrichedBooking[], upsellOrders: EnrichedUpsellOrder[] = []): number {
   const now = new Date();
-  return bookings
+  const bookingTotal = bookings
     .filter((b) => isConfirmedPaid(b) && inCurrentMonth(b.paid_at ?? b.created_at, now))
     .reduce((sum, b) => sum + b.amount_cents, 0);
+  const upsellTotal = upsellOrders
+    .filter((o) => inCurrentMonth(o.created_at, now))
+    .reduce((sum, o) => sum + o.amount_cents, 0);
+  return bookingTotal + upsellTotal;
+}
+
+/** Total of confirmed bookings plus paid upsell orders — the "everything
+ * ever charged" number used for lifetime revenue. */
+export function lifetimeRevenue(bookings: EnrichedBooking[], upsellOrders: EnrichedUpsellOrder[] = []): number {
+  const bookingTotal = bookings.filter(isConfirmedPaid).reduce((sum, b) => sum + b.amount_cents, 0);
+  const upsellTotal = upsellOrders.reduce((sum, o) => sum + o.amount_cents, 0);
+  return bookingTotal + upsellTotal;
 }
 
 export function bookingsThisMonthCount(bookings: EnrichedBooking[]): number {
@@ -68,7 +87,7 @@ export interface ClientTotal {
   lastDate: string | null;
 }
 
-export function topClients(bookings: EnrichedBooking[], limit = 5): ClientTotal[] {
+export function topClients(bookings: EnrichedBooking[], limit = 5, upsellOrders: EnrichedUpsellOrder[] = []): ClientTotal[] {
   const byClient = new Map<string, ClientTotal>();
   for (const b of bookings) {
     if (!b.client || !isConfirmedPaid(b)) continue;
@@ -88,6 +107,15 @@ export function topClients(bookings: EnrichedBooking[], limit = 5): ClientTotal[
         lastDate: date,
       });
     }
+  }
+  for (const o of upsellOrders) {
+    const clientId = o.client?.id;
+    if (!clientId) continue;
+    const existing = byClient.get(clientId);
+    if (existing) existing.totalCents += o.amount_cents;
+    // If a client's only activity is an upsell (shouldn't normally happen —
+    // upsells hang off a booking — but skip cleanly rather than fabricate a
+    // booking count of 0 for a client with no confirmed session).
   }
   return Array.from(byClient.values())
     .sort((a, b) => b.totalCents - a.totalCents)

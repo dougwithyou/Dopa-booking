@@ -1,5 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { fetchEnrichedBookings, getLandingPages, getStudioId } from '@/components/admin/lib/data';
+import { fetchEnrichedBookings, fetchEnrichedUpsellOrders, getLandingPages, getStudioId } from '@/components/admin/lib/data';
 import {
   bookingsByHourOfDay,
   bookingsByLocation,
@@ -20,9 +20,10 @@ export default async function StatsPage() {
   const supabase = await createServerSupabaseClient();
   const studioId = await getStudioId(supabase);
 
-  const [bookings, landingPages] = await Promise.all([
+  const [bookings, landingPages, upsellOrders] = await Promise.all([
     fetchEnrichedBookings(supabase, studioId),
     getLandingPages(supabase, studioId),
+    fetchEnrichedUpsellOrders(supabase, studioId),
   ]);
 
   const landingPageIds = landingPages.map((lp) => lp.id);
@@ -40,7 +41,7 @@ export default async function StatsPage() {
   const overallRate = totalViews > 0 ? (totalConfirmed / totalViews) * 100 : 0;
 
   const conversion = conversionByLandingPage(bookings, viewsByPage, landingPages);
-  const revenue = monthlyRevenue(bookings, 12);
+  const revenue = monthlyRevenue(bookings, 12, upsellOrders);
   const bySessionType = revenueBySessionType(bookings);
   const byLocation = bookingsByLocation(bookings);
   const byHour = bookingsByHourOfDay(bookings);

@@ -16,6 +16,7 @@ import type {
   LandingPage,
   Location,
   Product,
+  UpsellOrder,
 } from '@/types/db';
 
 export type SB = SupabaseClient<Database>;
@@ -92,6 +93,56 @@ export async function fetchEnrichedBookings(supabase: SB, studioId: string): Pro
     client: b.client_id ? clientMap[b.client_id] ?? null : null,
     slot: b.slot_id ? slotMap[b.slot_id] ?? null : null,
   }));
+}
+
+export interface EnrichedUpsellOrder extends UpsellOrder {
+  product: Product | null;
+  booking: Booking | null;
+  client: Client | null;
+}
+
+/** Every paid upsell order for a studio (photobooks, prints, etc. bought
+ * after checkout), hydrated with the product, booking, and client — the
+ * "what do I still need to hand over" list. `upsell_orders` has no
+ * studio_id of its own, so this scopes through the studio's bookings. */
+export async function fetchEnrichedUpsellOrders(supabase: SB, studioId: string): Promise<EnrichedUpsellOrder[]> {
+  const { data: bookingsRaw } = await supabase.from('bookings').select('*').eq('studio_id', studioId);
+  const bookings = bookingsRaw ?? [];
+  if (bookings.length === 0) return [];
+  const bookingMap = mapById(bookings);
+  const bookingIds = bookings.map((b) => b.id);
+
+  const { data: ordersRaw } = await supabase
+    .from('upsell_orders')
+    .select('*')
+    .in('booking_id', bookingIds)
+    .eq('status', 'paid')
+    .order('created_at', { ascending: false });
+  const orders = ordersRaw ?? [];
+  if (orders.length === 0) return [];
+
+  const productIds = uniq(orders.map((o) => o.product_id));
+  const clientIds = uniq(
+    orders.map((o) => bookingMap[o.booking_id]?.client_id).filter((v): v is string => !!v)
+  );
+
+  const [productsRes, clientsRes] = await Promise.all([
+    productIds.length ? supabase.from('products').select('*').in('id', productIds) : Promise.resolve({ data: [] }),
+    clientIds.length ? supabase.from('clients').select('*').in('id', clientIds) : Promise.resolve({ data: [] }),
+  ]);
+
+  const productMap = mapById((productsRes.data ?? []) as Product[]);
+  const clientMap = mapById((clientsRes.data ?? []) as Client[]);
+
+  return orders.map((o) => {
+    const booking = bookingMap[o.booking_id] ?? null;
+    return {
+      ...o,
+      product: productMap[o.product_id] ?? null,
+      booking,
+      client: booking?.client_id ? clientMap[booking.client_id] ?? null : null,
+    };
+  });
 }
 
 export async function getLocations(supabase: SB, studioId: string): Promise<Location[]> {
