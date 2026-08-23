@@ -117,7 +117,7 @@ export async function LandingPageView({
             .map((p) => p.trim())
             .filter(Boolean)}
           signature={t('about.signature', { studio: studioName })}
-          imageUrl={photos[1]?.url ?? page.hero_image_url}
+          imageUrl={page.about_image_url ?? photos[1]?.url ?? page.hero_image_url}
         />
       )}
 

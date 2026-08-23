@@ -46,6 +46,7 @@ interface EditorState {
   closer_body_en: string;
   closer_body_es: string;
   hero_image_url: string | null;
+  about_image_url: string | null;
   gallery: GalleryPhoto[];
   base_price: string;
   currency: string;
@@ -79,6 +80,7 @@ function fromPage(p: LandingPage): EditorState {
     closer_body_en: p.closer_body_en ?? '',
     closer_body_es: p.closer_body_es ?? '',
     hero_image_url: p.hero_image_url,
+    about_image_url: p.about_image_url,
     gallery: [...(p.gallery ?? [])].sort((a, b) => a.order - b.order),
     base_price: centsToDollarsInput(p.base_price_cents),
     currency: p.currency || 'usd',
@@ -148,6 +150,7 @@ export default function LandingPageEditor({
   const [productIds, setProductIds] = useState<string[]>(initialProductIds);
   const [saving, setSaving] = useState(false);
   const [uploadingHero, setUploadingHero] = useState(false);
+  const [uploadingAbout, setUploadingAbout] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -176,6 +179,20 @@ export default function LandingPageEditor({
       setError(e instanceof Error ? e.message : 'Hero upload failed.');
     } finally {
       setUploadingHero(false);
+    }
+  }
+
+  async function handleAboutUpload(blob: Blob) {
+    setUploadingAbout(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const url = await uploadMedia(supabase, 'about', blob);
+      set('about_image_url', url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'About photo upload failed.');
+    } finally {
+      setUploadingAbout(false);
     }
   }
 
@@ -242,6 +259,7 @@ export default function LandingPageEditor({
         closer_body_en: state.closer_body_en || null,
         closer_body_es: state.closer_body_es || null,
         hero_image_url: state.hero_image_url,
+        about_image_url: state.about_image_url,
         gallery: state.gallery,
         base_price_cents: state.base_price ? dollarsInputToCents(state.base_price) : null,
         currency: state.currency || 'usd',
@@ -422,6 +440,18 @@ export default function LandingPageEditor({
 
       <div className={`${cardCls} space-y-4`}>
         <h2 className="text-sm font-semibold text-gray-900">About</h2>
+        <div className="flex items-start gap-4">
+          {state.about_image_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={state.about_image_url} alt="" className="h-24 w-20 rounded-md object-cover" />
+          )}
+          <ImageUploadCrop
+            aspect={4 / 5}
+            label={state.about_image_url ? 'Replace about photo' : 'Upload about photo'}
+            uploading={uploadingAbout}
+            onCropped={handleAboutUpload}
+          />
+        </div>
         <PairedRow
           label="About heading"
           enValue={state.about_heading_en}

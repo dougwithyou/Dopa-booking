@@ -86,6 +86,7 @@ export type LandingPage = {
   closer_body_en: string | null; closer_body_es: string | null;
 
   hero_image_url: string | null;
+  about_image_url: string | null;
   gallery: GalleryPhoto[];
   testimonials: Testimonial[];
   theme: LandingPageTheme;
