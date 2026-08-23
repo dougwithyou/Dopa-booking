@@ -282,9 +282,12 @@ export default function LocationsManager({
                     </button>
                   </td>
                   <td className={tdCls}>
-                    <div className="flex justify-end gap-1">
-                      <Link href={`/admin/locations/${loc.id}/availability`} className={btnGhost}>
-                        <CalendarClock className="h-3.5 w-3.5" /> Availability
+                    <div className="flex justify-end gap-1.5">
+                      <Link
+                        href={`/admin/locations/${loc.id}/availability`}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
+                      >
+                        <CalendarClock className="h-3.5 w-3.5" /> Set availability
                       </Link>
                       <button className={btnGhost} onClick={() => startEdit(loc)}>
                         <Pencil className="h-3.5 w-3.5" />
