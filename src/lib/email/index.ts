@@ -5,6 +5,7 @@ import { resolveLocale } from './format';
 import {
   buildAdminBookingNotificationEmail,
   buildBookingConfirmationEmail,
+  buildContractSignedNotificationEmail,
   buildHoldExpirationReminderEmail,
 } from './templates';
 
@@ -69,4 +70,25 @@ export async function sendHoldExpirationReminder(params: {
   const locale = resolveLocale(params.locale);
   const content = buildHoldExpirationReminderEmail({ ...params, locale });
   await sendEmailSafe({ to, content });
+}
+
+/**
+ * Sends the internal "contract signed" notification to Doug once a client
+ * completes e-signature. Always English, always terse — sent to
+ * ADMIN_NOTIFICATION_EMAIL.
+ */
+export async function sendContractSignedNotification(params: {
+  contractTitle: string;
+  signerName: string;
+  clientEmail: string | null;
+  signedAtIso: string;
+  pdfUrl: string | null;
+}): Promise<void> {
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  if (!adminEmail) {
+    console.error('[email] Skipping contract-signed notification — ADMIN_NOTIFICATION_EMAIL is not set.');
+    return;
+  }
+  const content = buildContractSignedNotificationEmail(params);
+  await sendEmailSafe({ to: adminEmail, content });
 }

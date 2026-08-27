@@ -116,5 +116,40 @@
     "title": "Page not found",
     "body": "This session may have wrapped up, or the link is off. Check back with your photographer for the latest booking link.",
     "backHome": "Back to Dopa Studio"
+  },
+  "contracts": {
+    "loading": "Loading contract…",
+    "notFound": {
+      "title": "Contract not found",
+      "body": "This link may be incorrect, or the contract isn't ready to view yet. Check with your photographer for the current link."
+    },
+    "void": {
+      "title": "This contract is no longer valid",
+      "body": "Reach out to your photographer if you believe this is a mistake."
+    },
+    "signed": {
+      "title": "Signed",
+      "body": "This contract was signed by {name} on {date}.",
+      "download": "Download signed PDF"
+    },
+    "form": {
+      "heading": "Review & sign",
+      "nameLabel": "Full legal name",
+      "namePlaceholder": "Jane Doe",
+      "idLabel": "ID number (optional)",
+      "idPlaceholder": "Driver's license or passport #",
+      "signatureLabel": "Signature",
+      "signatureClear": "Clear",
+      "signatureRequired": "Please sign above before submitting.",
+      "nameRequired": "Please enter your full legal name.",
+      "submit": "Sign contract",
+      "submitting": "Submitting…",
+      "errorGeneric": "Something went wrong submitting your signature. Please try again.",
+      "errorAlreadySigned": "This contract has already been signed.",
+      "disclaimer": "By signing above, you agree to the terms of this contract. Your name, signature, IP address, and the date/time will be recorded as proof of agreement."
+    },
+    "confirmationTitle": "Contract signed!",
+    "confirmationBody": "Thank you — a copy has been sent to the studio. You can download your signed copy below.",
+    "download": "Download signed PDF"
   }
 }

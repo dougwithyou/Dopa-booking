@@ -11,6 +11,7 @@ import type {
   AvailabilitySlot,
   Booking,
   Client,
+  Contract,
   Database,
   DiscountCode,
   LandingPage,
@@ -143,6 +144,28 @@ export async function fetchEnrichedUpsellOrders(supabase: SB, studioId: string):
       client: booking?.client_id ? clientMap[booking.client_id] ?? null : null,
     };
   });
+}
+
+export interface EnrichedContract extends Contract {
+  client: Client | null;
+}
+
+export async function fetchEnrichedContracts(supabase: SB, studioId: string): Promise<EnrichedContract[]> {
+  const { data: contractsRaw } = await supabase
+    .from('contracts')
+    .select('*')
+    .eq('studio_id', studioId)
+    .order('created_at', { ascending: false });
+  const contracts = contractsRaw ?? [];
+  if (contracts.length === 0) return [];
+
+  const clientIds = uniq(contracts.map((c) => c.client_id).filter((v): v is string => !!v));
+  const { data: clientsRaw } = clientIds.length
+    ? await supabase.from('clients').select('*').in('id', clientIds)
+    : { data: [] as Client[] };
+  const clientMap = mapById((clientsRaw ?? []) as Client[]);
+
+  return contracts.map((c) => ({ ...c, client: c.client_id ? clientMap[c.client_id] ?? null : null }));
 }
 
 export async function getLocations(supabase: SB, studioId: string): Promise<Location[]> {

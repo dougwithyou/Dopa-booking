@@ -116,5 +116,40 @@
     "title": "Página no encontrada",
     "body": "Esta sesión pudo haber terminado, o el enlace no es correcto. Consulta con tu fotógrafo para obtener el enlace de reserva más reciente.",
     "backHome": "Volver a Dopa Studio"
+  },
+  "contracts": {
+    "loading": "Cargando contrato…",
+    "notFound": {
+      "title": "Contrato no encontrado",
+      "body": "Este enlace puede ser incorrecto, o el contrato aún no está listo para verse. Consulta con tu fotógrafo el enlace vigente."
+    },
+    "void": {
+      "title": "Este contrato ya no es válido",
+      "body": "Contacta a tu fotógrafo si crees que esto es un error."
+    },
+    "signed": {
+      "title": "Firmado",
+      "body": "Este contrato fue firmado por {name} el {date}.",
+      "download": "Descargar PDF firmado"
+    },
+    "form": {
+      "heading": "Revisa y firma",
+      "nameLabel": "Nombre legal completo",
+      "namePlaceholder": "Jane Doe",
+      "idLabel": "Número de identificación (opcional)",
+      "idPlaceholder": "Licencia o pasaporte #",
+      "signatureLabel": "Firma",
+      "signatureClear": "Borrar",
+      "signatureRequired": "Por favor firma arriba antes de continuar.",
+      "nameRequired": "Por favor escribe tu nombre legal completo.",
+      "submit": "Firmar contrato",
+      "submitting": "Enviando…",
+      "errorGeneric": "Algo salió mal al enviar tu firma. Intenta de nuevo.",
+      "errorAlreadySigned": "Este contrato ya fue firmado.",
+      "disclaimer": "Al firmar arriba, aceptas los términos de este contrato. Tu nombre, firma, dirección IP y la fecha/hora quedarán registrados como prueba del acuerdo."
+    },
+    "confirmationTitle": "¡Contrato firmado!",
+    "confirmationBody": "Gracias — se envió una copia al estudio. Puedes descargar tu copia firmada abajo.",
+    "download": "Descargar PDF firmado"
   }
 }

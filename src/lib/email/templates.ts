@@ -249,3 +249,47 @@ export function buildHoldExpirationReminderEmail(params: {
 
   return { subject: copy.subject, html, text };
 }
+
+// ---------------------------------------------------------------------------
+// Contract signed notification (internal, English, terse)
+// ---------------------------------------------------------------------------
+
+export function buildContractSignedNotificationEmail(params: {
+  contractTitle: string;
+  signerName: string;
+  clientEmail: string | null;
+  signedAtIso: string;
+  pdfUrl: string | null;
+}): EmailContent {
+  const { contractTitle, signerName, clientEmail, signedAtIso, pdfUrl } = params;
+  const when = formatSlotDateTime(signedAtIso, 'en');
+  const summary = `Contract signed: "${contractTitle}" by ${signerName}`;
+
+  const detailsRows: Array<[string, string]> = [
+    ['Contract', contractTitle],
+    ['Signed by', clientEmail ? `${signerName} (${clientEmail})` : signerName],
+    ['Signed at', when],
+  ];
+
+  const html = renderHtmlEmail({
+    heading: 'Contract signed',
+    bodyHtml: `
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(summary)}</p>
+      ${detailsBlockHtml(detailsRows)}
+      ${
+        pdfUrl
+          ? `<p style="margin:16px 0 0;font-size:15px;line-height:1.5;"><a href="${escapeHtml(pdfUrl)}" style="color:#9c4a2c;">Download the signed PDF</a></p>`
+          : ''
+      }
+    `,
+  });
+
+  const text = [
+    summary,
+    '',
+    ...detailsRows.map(([label, value]) => `${label}: ${value}`),
+    ...(pdfUrl ? ['', `PDF: ${pdfUrl}`] : []),
+  ].join('\n');
+
+  return { subject: summary, html, text };
+}

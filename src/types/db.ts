@@ -218,6 +218,27 @@ export type PageView = {
   created_at: string;
 };
 
+export type ContractStatus = 'draft' | 'sent' | 'signed' | 'void';
+
+export type Contract = {
+  id: string;
+  studio_id: string;
+  client_id: string | null;
+  booking_id: string | null;
+  status: ContractStatus;
+  public_token: string;
+  title: string;
+  content: string;
+  pdf_url: string | null;
+  signer_name: string | null;
+  signer_id_number: string | null;
+  signature_data: string | null;
+  signer_ip: string | null;
+  signed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 // `@supabase/supabase-js`'s generic client infers row/insert/update types
 // from `Database['public']['Tables'][name]`, which must structurally match
 // its internal `GenericTable` (Row/Insert/Update/Relationships) — and the
@@ -261,6 +282,7 @@ export interface Database {
       bookings: { Row: Booking; Insert: Partial<Booking>; Update: Partial<Booking>; Relationships: Relationships };
       upsell_orders: { Row: UpsellOrder; Insert: Partial<UpsellOrder>; Update: Partial<UpsellOrder>; Relationships: Relationships };
       page_views: { Row: PageView; Insert: Partial<PageView>; Update: Partial<PageView>; Relationships: Relationships };
+      contracts: { Row: Contract; Insert: Partial<Contract>; Update: Partial<Contract>; Relationships: Relationships };
     };
     Views: Record<string, never>;
     Functions: {
