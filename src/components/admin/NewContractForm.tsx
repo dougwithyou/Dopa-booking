@@ -3,23 +3,32 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import type { Client } from '@/types/db';
 import type { EnrichedBooking } from './lib/data';
 import { landingPageLabel } from './lib/data';
 import { formatDateTime } from './lib/format';
 import { DEFAULT_CONTRACT_TEMPLATE, renderContractVariables } from '@/lib/contracts/template';
-import { btnPrimary, cardCls, inputCls, labelCls, selectCls } from './lib/ui';
+import { btnPrimary, btnSecondary, cardCls, inputCls, labelCls, selectCls } from './lib/ui';
 
 export default function NewContractForm({
   studioId,
   studioName,
   bookings,
+  clients,
 }: {
   studioId: string;
   studioName: string;
   bookings: EnrichedBooking[];
+  clients: Client[];
 }) {
   const router = useRouter();
   const [bookingId, setBookingId] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [clientList, setClientList] = useState<Client[]>(clients);
+  const [showNewClient, setShowNewClient] = useState(false);
+  const [newClientName, setNewClientName] = useState('');
+  const [newClientEmail, setNewClientEmail] = useState('');
+  const [addingClient, setAddingClient] = useState(false);
   const [title, setTitle] = useState('Photography Services Contract');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,11 +46,40 @@ export default function NewContractForm({
     [bookings]
   );
 
+  async function handleAddClient() {
+    if (!newClientName.trim() || !newClientEmail.trim()) {
+      setError('Enter a name and email for the new client.');
+      return;
+    }
+    setAddingClient(true);
+    setError(null);
+
+    const supabase = createClient();
+    const { data, error: insertError } = await supabase
+      .from('clients')
+      .insert({ studio_id: studioId, name: newClientName.trim(), email: newClientEmail.trim() })
+      .select('*')
+      .single();
+
+    setAddingClient(false);
+    if (insertError || !data) {
+      setError(insertError?.message ?? 'Failed to create client.');
+      return;
+    }
+    setClientList((prev) => [...prev, data].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '')));
+    setClientId(data.id);
+    setShowNewClient(false);
+    setNewClientName('');
+    setNewClientEmail('');
+  }
+
   async function handleCreate() {
     setSaving(true);
     setError(null);
 
     const booking = bookings.find((b) => b.id === bookingId) ?? null;
+    const linkedClient = booking?.client ?? clientList.find((c) => c.id === clientId) ?? null;
+
     const content = booking
       ? renderContractVariables(DEFAULT_CONTRACT_TEMPLATE, {
           clientName: booking.client?.name || booking.client?.email,
@@ -52,14 +90,19 @@ export default function NewContractForm({
           sessionType: landingPageLabel(booking.landing_page),
           location: booking.location?.name,
         })
-      : DEFAULT_CONTRACT_TEMPLATE;
+      : linkedClient
+        ? renderContractVariables(DEFAULT_CONTRACT_TEMPLATE, {
+            clientName: linkedClient.name || linkedClient.email,
+            studioName,
+          })
+        : DEFAULT_CONTRACT_TEMPLATE;
 
     const supabase = createClient();
     const { data, error: insertError } = await supabase
       .from('contracts')
       .insert({
         studio_id: studioId,
-        client_id: booking?.client_id ?? null,
+        client_id: booking?.client_id ?? clientId ?? null,
         booking_id: booking?.id ?? null,
         title: title.trim() || 'Photography Services Contract',
         content,
@@ -86,7 +129,14 @@ export default function NewContractForm({
 
       <div>
         <label className={labelCls}>Pre-fill from a booking (optional)</label>
-        <select className={selectCls} value={bookingId} onChange={(e) => setBookingId(e.target.value)}>
+        <select
+          className={selectCls}
+          value={bookingId}
+          onChange={(e) => {
+            setBookingId(e.target.value);
+            if (e.target.value) setClientId('');
+          }}
+        >
           <option value="">— Start from scratch —</option>
           {bookingOptions.map((opt) => (
             <option key={opt.id} value={opt.id}>
@@ -98,6 +148,60 @@ export default function NewContractForm({
           Fills in the client, session type, date, location, and amount using the default template's variables.
         </p>
       </div>
+
+      {!bookingId && (
+        <div>
+          <label className={labelCls}>Link a client (optional, for contracts with no booking)</label>
+          <select className={selectCls} value={clientId} onChange={(e) => setClientId(e.target.value)}>
+            <option value="">— No client —</option>
+            {clientList.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name || c.email}
+              </option>
+            ))}
+          </select>
+
+          {!showNewClient ? (
+            <button
+              type="button"
+              className="mt-2 text-xs font-medium text-gray-600 underline underline-offset-2 hover:text-gray-900"
+              onClick={() => setShowNewClient(true)}
+            >
+              + New client
+            </button>
+          ) : (
+            <div className="mt-2 space-y-2 rounded-md border border-gray-200 p-3">
+              <div>
+                <label className={labelCls}>Name</label>
+                <input
+                  className={inputCls}
+                  value={newClientName}
+                  onChange={(e) => setNewClientName(e.target.value)}
+                  placeholder="Client name"
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Email</label>
+                <input
+                  className={inputCls}
+                  type="email"
+                  value={newClientEmail}
+                  onChange={(e) => setNewClientEmail(e.target.value)}
+                  placeholder="client@example.com"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button type="button" className={btnSecondary} disabled={addingClient} onClick={handleAddClient}>
+                  {addingClient ? 'Adding…' : 'Add client'}
+                </button>
+                <button type="button" className={btnSecondary} onClick={() => setShowNewClient(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <button className={btnPrimary} disabled={saving} onClick={handleCreate}>
         {saving ? 'Creating…' : 'Create draft contract'}
