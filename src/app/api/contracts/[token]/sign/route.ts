@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import type { Client, Contract } from '@/types/db';
+import type { Client, Contract, Studio } from '@/types/db';
 import { adminDb, jsonError } from '@/app/api/_lib/payments';
 import { renderContractPdf } from '@/lib/contracts/pdf';
 import { uploadContractPdf } from '@/lib/contracts/storage';
@@ -71,6 +71,13 @@ export async function POST(request: NextRequest, { params }: { params: { token: 
   const signedAtIso = new Date().toISOString();
   const signerIp = clientIp(request);
 
+  const { data: studio } = await db
+    .from('studios')
+    .select('provider_signer_name, provider_signature_url')
+    .eq('id', contract.studio_id)
+    .maybeSingle();
+  const providerFields = studio as Pick<Studio, 'provider_signer_name' | 'provider_signature_url'> | null;
+
   let pdfUrl: string;
   try {
     const pdfBuffer = await renderContractPdf({
@@ -81,6 +88,8 @@ export async function POST(request: NextRequest, { params }: { params: { token: 
       signatureDataUrl: payload.signatureDataUrl,
       signedAtIso,
       signerIp,
+      providerSignerName: providerFields?.provider_signer_name,
+      providerSignatureUrl: providerFields?.provider_signature_url,
     });
     pdfUrl = await uploadContractPdf(db, contract.id, pdfBuffer);
   } catch (error) {

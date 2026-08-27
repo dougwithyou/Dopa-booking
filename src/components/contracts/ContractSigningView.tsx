@@ -11,6 +11,8 @@ interface ContractData {
   content: string;
   status: 'sent' | 'signed';
   studioName: string;
+  providerSignerName: string | null;
+  providerSignatureUrl: string | null;
   signerName: string | null;
   signedAt: string | null;
   pdfUrl: string | null;
@@ -119,6 +121,18 @@ export function ContractSigningView({ token, locale }: { token: string; locale: 
         className="space-y-4 font-body text-[15px] leading-relaxed text-ink/90 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-black [&_h2]:text-ink [&_h3]:font-display [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-ink [&_li]:ml-4 [&_li]:list-disc [&_ul]:space-y-1"
         dangerouslySetInnerHTML={{ __html: contentHtml }}
       />
+
+      {data.providerSignatureUrl && (
+        <div className="mt-8 border-t border-ink/15 pt-6">
+          {/* eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL */}
+          <img src={data.providerSignatureUrl} alt="" className="h-16 max-w-[220px] object-contain" />
+          {data.providerSignerName && (
+            <p className="mt-1 font-body text-xs text-ink/60">
+              {t('providerSignedBy', { name: data.providerSignerName, studio: data.studioName })}
+            </p>
+          )}
+        </div>
+      )}
 
       {isSigned ? (
         <div className="mt-10 border-t border-ink/15 pt-8 text-center">

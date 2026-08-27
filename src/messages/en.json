@@ -150,6 +150,7 @@
     },
     "confirmationTitle": "Contract signed!",
     "confirmationBody": "Thank you — a copy has been sent to the studio. You can download your signed copy below.",
-    "download": "Download signed PDF"
+    "download": "Download signed PDF",
+    "providerSignedBy": "Signed by {name} on behalf of {studio}"
   }
 }

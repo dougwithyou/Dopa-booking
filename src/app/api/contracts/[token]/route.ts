@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
  * visible; `draft` (not sent yet) and `void` (cancelled) both 404 so a
  * guessed or stale link doesn't leak anything.
  *
- * 200: { id, title, content, status, studioName, signerName, signedAt, pdfUrl }
+ * 200: { id, title, content, status, studioName, providerSignerName, providerSignatureUrl, signerName, signedAt, pdfUrl }
  */
 export async function GET(_request: NextRequest, { params }: { params: { token: string } }) {
   const db = adminDb();
@@ -33,14 +33,21 @@ export async function GET(_request: NextRequest, { params }: { params: { token: 
     return jsonError(404, 'contract_not_found');
   }
 
-  const { data: studio } = await db.from('studios').select('name').eq('id', row.studio_id).maybeSingle();
+  const { data: studio } = await db
+    .from('studios')
+    .select('name, provider_signer_name, provider_signature_url')
+    .eq('id', row.studio_id)
+    .maybeSingle();
+  const studioFields = studio as Pick<Studio, 'name' | 'provider_signer_name' | 'provider_signature_url'> | null;
 
   return NextResponse.json({
     id: row.id,
     title: row.title,
     content: row.content,
     status: row.status,
-    studioName: (studio as Pick<Studio, 'name'> | null)?.name ?? 'Dopa Studio',
+    studioName: studioFields?.name ?? 'Dopa Studio',
+    providerSignerName: studioFields?.provider_signer_name ?? null,
+    providerSignatureUrl: studioFields?.provider_signature_url ?? null,
     signerName: row.signer_name,
     signedAt: row.signed_at,
     pdfUrl: row.pdf_url,

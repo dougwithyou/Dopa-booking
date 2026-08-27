@@ -19,6 +19,8 @@ export type Studio = {
   meta_pixel_id: string | null;
   custom_domain: string | null;
   hold_duration_minutes: number;
+  provider_signer_name: string | null;
+  provider_signature_url: string | null;
   created_at: string;
   updated_at: string;
 };

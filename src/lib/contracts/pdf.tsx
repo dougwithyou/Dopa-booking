@@ -63,6 +63,8 @@ export interface ContractPdfInput {
   signatureDataUrl: string; // data:image/png;base64,...
   signedAtIso: string;
   signerIp: string;
+  providerSignerName?: string | null;
+  providerSignatureUrl?: string | null;
 }
 
 function ContractDocument({ input }: { input: ContractPdfInput }) {
@@ -76,8 +78,16 @@ function ContractDocument({ input }: { input: ContractPdfInput }) {
         {blocks.map((b, i) => (
           <BlockView key={i} block={b} />
         ))}
+        {input.providerSignatureUrl && (
+          <View style={styles.signatureSection}>
+            <InlineText text="Provider signature" style={styles.h3} />
+            {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image has no alt prop */}
+            <Image src={input.providerSignatureUrl} style={styles.signatureImage} />
+            {input.providerSignerName && <Text style={styles.signerLine}>{input.providerSignerName}</Text>}
+          </View>
+        )}
         <View style={styles.signatureSection}>
-          <InlineText text="Signature" style={styles.h3} />
+          <InlineText text="Client signature" style={styles.h3} />
           {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image has no alt prop */}
           <Image src={input.signatureDataUrl} style={styles.signatureImage} />
           <Text style={styles.signerLine}>

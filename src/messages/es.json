@@ -150,6 +150,7 @@
     },
     "confirmationTitle": "¡Contrato firmado!",
     "confirmationBody": "Gracias — se envió una copia al estudio. Puedes descargar tu copia firmada abajo.",
-    "download": "Descargar PDF firmado"
+    "download": "Descargar PDF firmado",
+    "providerSignedBy": "Firmado por {name} en representación de {studio}"
   }
 }
