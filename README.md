@@ -35,11 +35,11 @@ supabase/migrations/      SQL migrations (schema, RLS policies, storage bucket)
 ### 1. Supabase project
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Run the migrations in `supabase/migrations/` in order (via the SQL editor,
-   the Supabase CLI, or the `mcp__Supabase__apply_migration` tool):
-   - `0001_init.sql` — schema + seeds the single Dopa Studio row
-   - `0002_rls.sql` — Row Level Security policies
-   - `0003_storage.sql` — `landing-media` Storage bucket + policies
+2. Run the migrations in `supabase/migrations/` **in order** (via the SQL
+   editor, the Supabase CLI, or the `mcp__Supabase__apply_migration` tool) —
+   see that directory for the full current list (schema, RLS, storage
+   buckets, and incremental additions like the About-section photo,
+   upsell fulfillment tracking, and the contracts/e-signature module).
 3. Create Doug's admin login: Authentication → Users → Add user (email +
    password). Then insert a `studio_admins` row linking that user to the
    seeded studio:
@@ -102,6 +102,38 @@ the first public landing page.
    to the production domain.
 3. Update the Stripe Connect redirect URI and webhook endpoint to the
    production URL.
+
+## ⚠️ Going live with Stripe (test mode → live mode)
+
+**Test mode and live mode in Stripe are two entirely separate
+configurations — nothing below carries over automatically.** Do this the
+day Dopa Studio is ready to accept real payments (production domain is
+`https://book.hidopastudio.com`):
+
+1. In the Stripe Dashboard, flip the **Sandbox/Live** switch to **Live**.
+2. Grab the **live** keys (Developers → API keys) — `sk_live_...` /
+   `pk_live_...` — and update `STRIPE_SECRET_KEY` /
+   `STRIPE_PUBLISHABLE_KEY` in Vercel's env vars. Trigger a redeploy.
+3. Still in **Live** mode, create a **new** webhook/event destination at
+   `https://book.hidopastudio.com/api/webhooks/stripe`:
+   - Events: `checkout.session.completed`,
+     `checkout.session.async_payment_succeeded`,
+     `checkout.session.expired`
+   - **Events from: Connected accounts** (not just your platform account)
+   - **Payload style: Snapshot** (not "Thin" — the webhook handler reads
+     `event.data.object` directly and needs the full object, not just an ID)
+   - Copy the new `whsec_...` into `STRIPE_WEBHOOK_SECRET` in Vercel and
+     redeploy.
+4. While in **Live** mode, check Settings → Connect → Settings →
+   Integration that the redirect URI
+   `https://book.hidopastudio.com/api/stripe/connect/callback` is
+   registered there too (it's sometimes scoped per-mode in Stripe's UI).
+5. **Re-connect Stripe from `/admin/settings`** — the test-mode OAuth
+   connection does not carry over to live mode; click "Connect Stripe"
+   again so `studios.stripe_account_id` points at the live connected
+   account.
+6. Do one real end-to-end test booking with a real card before announcing
+   it's live.
 
 ## Notes / known follow-ups
 
