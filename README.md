@@ -63,6 +63,7 @@ Copy `.env.example` to `.env.local` and fill in:
 | `RESEND_API_KEY` | resend.com → API Keys |
 | `RESEND_FROM_EMAIL` | A verified sending address/domain in Resend |
 | `ADMIN_NOTIFICATION_EMAIL` | Doug's inbox for new-booking alerts |
+| `ANTHROPIC_API_KEY` | console.anthropic.com → API Keys. Optional — powers the "Generate with AI" button on `/admin/contracts/new`; contract creation still works without it |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` locally, the Vercel URL in production |
 
 ### 3. Stripe Connect
