@@ -46,10 +46,14 @@ export default function NewContractForm({
     [bookings]
   );
 
-  async function handleAddClient() {
+  /** Inserts a client from the newClientName/newClientEmail fields and
+   * returns its id, or null (with `error` set) if that failed. Shared by
+   * the standalone "Add client" button and handleCreate's auto-save, so a
+   * name/email typed but never explicitly submitted isn't silently lost. */
+  async function createNewClient(): Promise<string | null> {
     if (!newClientName.trim() || !newClientEmail.trim()) {
       setError('Enter a name and email for the new client.');
-      return;
+      return null;
     }
     setAddingClient(true);
     setError(null);
@@ -64,21 +68,34 @@ export default function NewContractForm({
     setAddingClient(false);
     if (insertError || !data) {
       setError(insertError?.message ?? 'Failed to create client.');
-      return;
+      return null;
     }
     setClientList((prev) => [...prev, data].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '')));
     setClientId(data.id);
     setShowNewClient(false);
     setNewClientName('');
     setNewClientEmail('');
+    return data.id;
   }
 
   async function handleCreate() {
     setSaving(true);
     setError(null);
 
+    // If the admin typed a new client's name/email but never clicked "Add
+    // client", create it now instead of quietly dropping it.
+    let effectiveClientId = clientId;
+    if (!effectiveClientId && showNewClient && (newClientName.trim() || newClientEmail.trim())) {
+      const newId = await createNewClient();
+      if (!newId) {
+        setSaving(false);
+        return;
+      }
+      effectiveClientId = newId;
+    }
+
     const booking = bookings.find((b) => b.id === bookingId) ?? null;
-    const linkedClient = booking?.client ?? clientList.find((c) => c.id === clientId) ?? null;
+    const linkedClient = booking?.client ?? clientList.find((c) => c.id === effectiveClientId) ?? null;
 
     const content = booking
       ? renderContractVariables(DEFAULT_CONTRACT_TEMPLATE, {
@@ -102,7 +119,9 @@ export default function NewContractForm({
       .from('contracts')
       .insert({
         studio_id: studioId,
-        client_id: booking?.client_id ?? clientId ?? null,
+        // effectiveClientId is '' (not null/undefined) when left on "— No
+        // client —", which Postgres' uuid column rejects — normalize it.
+        client_id: booking?.client_id ?? (effectiveClientId || null),
         booking_id: booking?.id ?? null,
         title: title.trim() || 'Photography Services Contract',
         content,
@@ -191,7 +210,7 @@ export default function NewContractForm({
                 />
               </div>
               <div className="flex gap-2">
-                <button type="button" className={btnSecondary} disabled={addingClient} onClick={handleAddClient}>
+                <button type="button" className={btnSecondary} disabled={addingClient} onClick={createNewClient}>
                   {addingClient ? 'Adding…' : 'Add client'}
                 </button>
                 <button type="button" className={btnSecondary} onClick={() => setShowNewClient(false)}>
