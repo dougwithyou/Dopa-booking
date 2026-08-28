@@ -119,6 +119,11 @@
   },
   "contracts": {
     "loading": "Loading contract…",
+    "intake": {
+      "subtitle": "Before you view the contract, let us know who you are.",
+      "continue": "Continue",
+      "edit": "Edit"
+    },
     "notFound": {
       "title": "Contract not found",
       "body": "This link may be incorrect, or the contract isn't ready to view yet. Check with your photographer for the current link."

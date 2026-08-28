@@ -30,6 +30,8 @@ export function ContractSigningView({ token, locale }: { token: string; locale: 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [idNumber, setIdNumber] = useState('');
+  const [infoConfirmed, setInfoConfirmed] = useState(false);
+  const [intakeError, setIntakeError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [signedResult, setSignedResult] = useState<{ pdfUrl: string } | null>(null);
@@ -58,6 +60,19 @@ export function ContractSigningView({ token, locale }: { token: string; locale: 
       cancelled = true;
     };
   }, [token]);
+
+  function handleConfirmInfo() {
+    setIntakeError(null);
+    if (!name.trim()) {
+      setIntakeError(t('form.nameRequired'));
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setIntakeError(t('form.emailRequired'));
+      return;
+    }
+    setInfoConfirmed(true);
+  }
 
   async function handleSubmit() {
     setError(null);
@@ -118,6 +133,54 @@ export function ContractSigningView({ token, locale }: { token: string; locale: 
   if (!data) return null;
 
   const isSigned = !!signedResult || data.status === 'signed';
+
+  if (!isSigned && !infoConfirmed) {
+    return (
+      <div className="mx-auto max-w-md px-6 py-16">
+        <div className="mb-8 text-center">
+          <span className="font-display text-xs font-black uppercase tracking-[0.14em] text-clay">{data.studioName}</span>
+          <h1 className="mt-2 font-display text-2xl font-black text-ink">{data.title}</h1>
+          <p className="mt-3 font-body text-sm text-ink/70">{t('intake.subtitle')}</p>
+        </div>
+
+        <div className="mb-4">
+          <label className="mb-1 block font-body text-[11px] font-semibold uppercase tracking-[0.1em] text-ink/50">
+            {t('form.nameLabel')}
+          </label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t('form.namePlaceholder')}
+            className="w-full border border-ink/20 bg-white px-3 py-2.5 font-body text-sm text-ink focus:border-ink focus:outline-none"
+          />
+        </div>
+
+        <div className="mb-6">
+          <label className="mb-1 block font-body text-[11px] font-semibold uppercase tracking-[0.1em] text-ink/50">
+            {t('form.emailLabel')}
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t('form.emailPlaceholder')}
+            className="w-full border border-ink/20 bg-white px-3 py-2.5 font-body text-sm text-ink focus:border-ink focus:outline-none"
+          />
+        </div>
+
+        {intakeError && <p className="mb-4 font-body text-sm text-red-700">{intakeError}</p>}
+
+        <button
+          type="button"
+          onClick={handleConfirmInfo}
+          className="w-full bg-clay px-6 py-3.5 font-body text-xs font-semibold uppercase tracking-[0.14em] text-parchment transition-colors hover:bg-wine"
+        >
+          {t('intake.continue')}
+        </button>
+      </div>
+    );
+  }
+
   const displayName = (isSigned ? data.signerName : name) || data.clientName || '';
   const contentHtml = contractMarkdownToHtml(
     renderContractVariables(data.content, { clientName: displayName, studioName: data.studioName })
@@ -176,29 +239,18 @@ export function ContractSigningView({ token, locale }: { token: string; locale: 
         <div className="mt-10 border-t border-ink/15 pt-8">
           <h2 className="mb-4 font-display text-xl font-black text-ink">{t('form.heading')}</h2>
 
-          <div className="mb-4">
-            <label className="mb-1 block font-body text-[11px] font-semibold uppercase tracking-[0.1em] text-ink/50">
-              {t('form.nameLabel')}
-            </label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('form.namePlaceholder')}
-              className="w-full border border-ink/20 bg-white px-3 py-2.5 font-body text-sm text-ink focus:border-ink focus:outline-none"
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="mb-1 block font-body text-[11px] font-semibold uppercase tracking-[0.1em] text-ink/50">
-              {t('form.emailLabel')}
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t('form.emailPlaceholder')}
-              className="w-full border border-ink/20 bg-white px-3 py-2.5 font-body text-sm text-ink focus:border-ink focus:outline-none"
-            />
+          <div className="mb-4 flex items-center justify-between border border-ink/15 bg-white px-3 py-2.5">
+            <div>
+              <div className="font-body text-sm text-ink">{name}</div>
+              <div className="font-body text-xs text-ink/60">{email}</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setInfoConfirmed(false)}
+              className="font-body text-xs font-semibold uppercase tracking-[0.1em] text-ink/50 underline-offset-4 hover:text-ink hover:underline"
+            >
+              {t('intake.edit')}
+            </button>
           </div>
 
           <div className="mb-4">

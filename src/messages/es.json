@@ -119,6 +119,11 @@
   },
   "contracts": {
     "loading": "Cargando contrato…",
+    "intake": {
+      "subtitle": "Antes de ver el contrato, cuéntanos quién eres.",
+      "continue": "Continuar",
+      "edit": "Editar"
+    },
     "notFound": {
       "title": "Contrato no encontrado",
       "body": "Este enlace puede ser incorrecto, o el contrato aún no está listo para verse. Consulta con tu fotógrafo el enlace vigente."
