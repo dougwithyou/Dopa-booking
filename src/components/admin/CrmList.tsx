@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Download, Search } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Download, Search, Trash2 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 import { formatCents, formatDate } from './lib/format';
-import { btnSecondary, inputCls, selectCls, tableWrapCls, tdCls, thCls } from './lib/ui';
+import { btnGhost, btnSecondary, inputCls, selectCls, tableWrapCls, tdCls, thCls } from './lib/ui';
 
 export interface ClientRow {
   id: string;
@@ -36,18 +38,43 @@ function toCsv(rows: ClientRow[]): string {
 }
 
 export default function CrmList({ rows }: { rows: ClientRow[] }) {
+  const router = useRouter();
+  const [items, setItems] = useState(rows);
   const [query, setQuery] = useState('');
   const [sessionType, setSessionType] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const allSessionTypes = useMemo(() => Array.from(new Set(rows.flatMap((r) => r.sessionTypes))).sort(), [rows]);
+  const allSessionTypes = useMemo(() => Array.from(new Set(items.flatMap((r) => r.sessionTypes))).sort(), [items]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return rows
+    return items
       .filter((r) => !q || r.name?.toLowerCase().includes(q) || r.email.toLowerCase().includes(q))
       .filter((r) => !sessionType || r.sessionTypes.includes(sessionType))
       .sort((a, b) => b.lifetimeCents - a.lifetimeCents);
-  }, [rows, query, sessionType]);
+  }, [items, query, sessionType]);
+
+  async function handleDelete(row: ClientRow) {
+    if (
+      !confirm(
+        `Delete ${row.name || row.email}? Their past bookings and contracts stay on record but will show as "no client" instead of being linked to this person.`
+      )
+    ) {
+      return;
+    }
+    setDeletingId(row.id);
+    setError(null);
+    const supabase = createClient();
+    const { error: deleteError } = await supabase.from('clients').delete().eq('id', row.id);
+    setDeletingId(null);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+    setItems((prev) => prev.filter((r) => r.id !== row.id));
+    router.refresh();
+  }
 
   function handleExport() {
     const csv = toCsv(filtered);
@@ -64,6 +91,8 @@ export default function CrmList({ rows }: { rows: ClientRow[] }) {
 
   return (
     <div className="space-y-4">
+      {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -96,6 +125,7 @@ export default function CrmList({ rows }: { rows: ClientRow[] }) {
               <th className={thCls}>Session type(s)</th>
               <th className={thCls}>Most recent</th>
               <th className={thCls}>Lifetime paid</th>
+              <th className={thCls}></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -115,11 +145,24 @@ export default function CrmList({ rows }: { rows: ClientRow[] }) {
                 </td>
                 <td className={tdCls}>{formatDate(r.lastDate)}</td>
                 <td className={tdCls}>{formatCents(r.lifetimeCents)}</td>
+                <td className={tdCls}>
+                  <div className="flex justify-end">
+                    <button
+                      className={btnGhost}
+                      disabled={deletingId === r.id}
+                      onClick={() => handleDelete(r)}
+                      title="Delete client"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {deletingId === r.id ? 'Deleting…' : 'Delete'}
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td className={tdCls} colSpan={5}>
+                <td className={tdCls} colSpan={6}>
                   No clients match.
                 </td>
               </tr>

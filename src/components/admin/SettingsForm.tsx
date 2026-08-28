@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Studio } from '@/types/db';
+import { SignaturePad, type SignaturePadHandle } from '@/components/contracts/SignaturePad';
 import { uploadMedia } from './lib/storage';
 import { btnPrimary, btnSecondary, cardCls, inputCls, labelCls } from './lib/ui';
 
@@ -18,11 +19,13 @@ export default function SettingsForm({ studio }: { studio: Studio }) {
   const [providerSignerName, setProviderSignerName] = useState(studio.provider_signer_name ?? '');
   const [providerSignatureUrl, setProviderSignatureUrl] = useState(studio.provider_signature_url ?? '');
   const [uploadingSignature, setUploadingSignature] = useState(false);
+  const [signatureMode, setSignatureMode] = useState<'upload' | 'draw'>('upload');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const signatureInputRef = useRef<HTMLInputElement>(null);
+  const signaturePadRef = useRef<SignaturePadHandle>(null);
 
   async function handleSignatureFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -35,6 +38,31 @@ export default function SettingsForm({ studio }: { studio: Studio }) {
       const ext = file.type === 'image/png' ? 'png' : 'jpg';
       const url = await uploadMedia(supabase, 'signatures', file, ext);
       setProviderSignatureUrl(url);
+    } catch (e2) {
+      setError(e2 instanceof Error ? e2.message : 'Signature upload failed.');
+    } finally {
+      setUploadingSignature(false);
+    }
+  }
+
+  async function handleSaveDrawnSignature() {
+    setError(null);
+    if (!signaturePadRef.current || signaturePadRef.current.isEmpty()) {
+      setError('Draw a signature first.');
+      return;
+    }
+    const dataUrl = signaturePadRef.current.getDataUrl();
+    if (!dataUrl) {
+      setError('Draw a signature first.');
+      return;
+    }
+    setUploadingSignature(true);
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const supabase = createClient();
+      const url = await uploadMedia(supabase, 'signatures', blob, 'png');
+      setProviderSignatureUrl(url);
+      signaturePadRef.current.clear();
     } catch (e2) {
       setError(e2 instanceof Error ? e2.message : 'Signature upload failed.');
     } finally {
@@ -134,7 +162,7 @@ export default function SettingsForm({ studio }: { studio: Studio }) {
         <div>
           <label className={labelCls}>Signature image</label>
           {providerSignatureUrl && (
-            <div className="mb-2 flex items-center gap-3">
+            <div className="mb-3 flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL */}
               <img
                 src={providerSignatureUrl}
@@ -146,21 +174,63 @@ export default function SettingsForm({ studio }: { studio: Studio }) {
               </button>
             </div>
           )}
-          <input
-            ref={signatureInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleSignatureFile}
-          />
-          <button
-            type="button"
-            className={btnSecondary}
-            disabled={uploadingSignature}
-            onClick={() => signatureInputRef.current?.click()}
-          >
-            {uploadingSignature ? 'Uploading…' : providerSignatureUrl ? 'Replace image' : 'Upload signature image'}
-          </button>
+
+          <div className="mb-3 flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => setSignatureMode('upload')}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                signatureMode === 'upload' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Upload image
+            </button>
+            <button
+              type="button"
+              onClick={() => setSignatureMode('draw')}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                signatureMode === 'draw' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Draw signature
+            </button>
+          </div>
+
+          {signatureMode === 'upload' ? (
+            <div>
+              <input
+                ref={signatureInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleSignatureFile}
+              />
+              <button
+                type="button"
+                className={btnSecondary}
+                disabled={uploadingSignature}
+                onClick={() => signatureInputRef.current?.click()}
+              >
+                {uploadingSignature ? 'Uploading…' : providerSignatureUrl ? 'Replace image' : 'Upload signature image'}
+              </button>
+            </div>
+          ) : (
+            <div className="max-w-sm space-y-2">
+              <SignaturePad ref={signaturePadRef} />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className={btnSecondary}
+                  onClick={() => signaturePadRef.current?.clear()}
+                >
+                  Clear
+                </button>
+                <button type="button" className={btnPrimary} disabled={uploadingSignature} onClick={handleSaveDrawnSignature}>
+                  {uploadingSignature ? 'Saving…' : 'Use this drawing'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
