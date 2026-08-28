@@ -156,7 +156,8 @@ export default function ContractEditor({
           <h2 className="text-sm font-semibold text-gray-900">Signed</h2>
           <p className="text-sm text-gray-700">
             Signed by <strong>{contract.signer_name}</strong>
-            {contract.signer_id_number ? ` (ID: ${contract.signer_id_number})` : ''} on{' '}
+            {contract.signer_email ? ` (${contract.signer_email})` : ''}
+            {contract.signer_id_number ? ` — ID: ${contract.signer_id_number}` : ''} on{' '}
             {contract.signed_at ? formatDateTime(contract.signed_at) : '—'}.
           </p>
           <p className="text-xs text-gray-500">IP address: {contract.signer_ip ?? '—'}</p>

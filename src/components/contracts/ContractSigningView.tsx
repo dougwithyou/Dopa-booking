@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { contractMarkdownToHtml } from '@/lib/contracts/markdown';
+import { renderContractVariables } from '@/lib/contracts/template';
 import { SignaturePad, type SignaturePadHandle } from './SignaturePad';
 
 interface ContractData {
@@ -13,6 +14,8 @@ interface ContractData {
   studioName: string;
   providerSignerName: string | null;
   providerSignatureUrl: string | null;
+  clientName: string | null;
+  clientEmail: string | null;
   signerName: string | null;
   signedAt: string | null;
   pdfUrl: string | null;
@@ -25,6 +28,7 @@ export function ContractSigningView({ token, locale }: { token: string; locale: 
   const [state, setState] = useState<ViewState>('loading');
   const [data, setData] = useState<ContractData | null>(null);
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [idNumber, setIdNumber] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +47,8 @@ export function ContractSigningView({ token, locale }: { token: string; locale: 
         const json = (await res.json()) as ContractData;
         if (cancelled) return;
         setData(json);
+        if (json.clientName) setName(json.clientName);
+        if (json.clientEmail) setEmail(json.clientEmail);
         setState('ready');
       })
       .catch(() => {
@@ -57,6 +63,10 @@ export function ContractSigningView({ token, locale }: { token: string; locale: 
     setError(null);
     if (!name.trim()) {
       setError(t('form.nameRequired'));
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError(t('form.emailRequired'));
       return;
     }
     if (!padRef.current || padRef.current.isEmpty()) {
@@ -76,6 +86,7 @@ export function ContractSigningView({ token, locale }: { token: string; locale: 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           signerName: name.trim(),
+          signerEmail: email.trim(),
           signerIdNumber: idNumber.trim() || undefined,
           signatureDataUrl,
         }),
@@ -106,8 +117,11 @@ export function ContractSigningView({ token, locale }: { token: string; locale: 
   }
   if (!data) return null;
 
-  const contentHtml = contractMarkdownToHtml(data.content);
   const isSigned = !!signedResult || data.status === 'signed';
+  const displayName = (isSigned ? data.signerName : name) || data.clientName || '';
+  const contentHtml = contractMarkdownToHtml(
+    renderContractVariables(data.content, { clientName: displayName, studioName: data.studioName })
+  );
   const finalPdfUrl = signedResult?.pdfUrl ?? (data.status === 'signed' ? data.pdfUrl : null);
 
   return (
@@ -170,6 +184,19 @@ export function ContractSigningView({ token, locale }: { token: string; locale: 
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t('form.namePlaceholder')}
+              className="w-full border border-ink/20 bg-white px-3 py-2.5 font-body text-sm text-ink focus:border-ink focus:outline-none"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="mb-1 block font-body text-[11px] font-semibold uppercase tracking-[0.1em] text-ink/50">
+              {t('form.emailLabel')}
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t('form.emailPlaceholder')}
               className="w-full border border-ink/20 bg-white px-3 py-2.5 font-body text-sm text-ink focus:border-ink focus:outline-none"
             />
           </div>

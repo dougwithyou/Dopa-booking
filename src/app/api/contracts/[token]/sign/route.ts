@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic';
 
 const SignSchema = z.object({
   signerName: z.string().trim().min(1).max(200),
+  signerEmail: z.string().trim().email().max(200),
   signerIdNumber: z.string().trim().max(100).nullish(),
   // A PNG data URL from the signature canvas, e.g. "data:image/png;base64,...".
   signatureDataUrl: z.string().startsWith('data:image/png;base64,').max(2_000_000),
@@ -25,7 +26,7 @@ function clientIp(request: NextRequest): string {
 /**
  * POST /api/contracts/[token]/sign
  *
- * Public, unauthenticated. Body: { signerName, signerIdNumber?, signatureDataUrl }
+ * Public, unauthenticated. Body: { signerName, signerEmail, signerIdNumber?, signatureDataUrl }
  * 200: { pdfUrl }
  * 409: { error: 'already_signed' } | { error: 'contract_void' }
  * 404: { error: 'contract_not_found' }
@@ -78,6 +79,35 @@ export async function POST(request: NextRequest, { params }: { params: { token: 
     .maybeSingle();
   const providerFields = studio as Pick<Studio, 'provider_signer_name' | 'provider_signature_url'> | null;
 
+  // Resolve (or create) the CRM client this contract belongs to. A contract
+  // created without a pre-selected client (e.g. a standalone service
+  // agreement with no photography booking) relies on the signer providing
+  // their own name/email here, matched or added to the studio's client list.
+  let clientId = contract.client_id;
+  if (!clientId) {
+    const { data: existingClient } = await db
+      .from('clients')
+      .select('id')
+      .eq('studio_id', contract.studio_id)
+      .eq('email', payload.signerEmail)
+      .maybeSingle();
+    const existing = existingClient as Pick<Client, 'id'> | null;
+    if (existing) {
+      clientId = existing.id;
+    } else {
+      const { data: newClient, error: clientInsertError } = await db
+        .from('clients')
+        .insert({ studio_id: contract.studio_id, name: payload.signerName, email: payload.signerEmail })
+        .select('id')
+        .single();
+      if (clientInsertError || !newClient) {
+        console.error('[contracts/sign] client creation failed', clientInsertError);
+        return jsonError(500, 'client_creation_failed');
+      }
+      clientId = (newClient as Pick<Client, 'id'>).id;
+    }
+  }
+
   let pdfUrl: string;
   try {
     const pdfBuffer = await renderContractPdf({
@@ -103,7 +133,9 @@ export async function POST(request: NextRequest, { params }: { params: { token: 
     .from('contracts')
     .update({
       status: 'signed',
+      client_id: clientId,
       signer_name: payload.signerName,
+      signer_email: payload.signerEmail,
       signer_id_number: payload.signerIdNumber || null,
       signature_data: payload.signatureDataUrl,
       signer_ip: signerIp,
@@ -123,16 +155,10 @@ export async function POST(request: NextRequest, { params }: { params: { token: 
     return jsonError(409, 'already_signed');
   }
 
-  let clientEmail: string | null = null;
-  if (contract.client_id) {
-    const { data: client } = await db.from('clients').select('email').eq('id', contract.client_id).maybeSingle();
-    clientEmail = (client as Pick<Client, 'email'> | null)?.email ?? null;
-  }
-
   await sendContractSignedNotification({
     contractTitle: contract.title,
     signerName: payload.signerName,
-    clientEmail,
+    clientEmail: payload.signerEmail,
     signedAtIso,
     pdfUrl,
   });

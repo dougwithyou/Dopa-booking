@@ -233,6 +233,7 @@ export type Contract = {
   content: string;
   pdf_url: string | null;
   signer_name: string | null;
+  signer_email: string | null;
   signer_id_number: string | null;
   signature_data: string | null;
   signer_ip: string | null;
