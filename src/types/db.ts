@@ -58,14 +58,23 @@ export type Testimonial = {
   order: number;
 };
 
+// Keys mirror the CSS custom properties defined in src/app/globals.css.
+// Any key left unset here falls back to that brand default.
 export type LandingPageTheme = {
-  primary_color?: string;
-  accent_color?: string;
-  ink_color?: string;
-  parchment_color?: string;
+  ink?: string;
+  parchment?: string;
+  parchment_dim?: string;
+  clay?: string;
+  moss?: string;
+  gold?: string;
+  wine?: string;
 };
 
 export type LandingPageStatus = 'draft' | 'published' | 'archived';
+
+// Hero and Footer are fixed as the first/last elements; only these four are
+// reorderable from the admin.
+export type LandingPageSectionKey = 'gallery' | 'testimonials' | 'about' | 'closer';
 
 export type LandingPage = {
   id: string;
@@ -92,6 +101,7 @@ export type LandingPage = {
   gallery: GalleryPhoto[];
   testimonials: Testimonial[];
   theme: LandingPageTheme;
+  section_order: LandingPageSectionKey[];
 
   base_price_cents: number | null;
   currency: string;
