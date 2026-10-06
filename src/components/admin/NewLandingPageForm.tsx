@@ -3,9 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { btnPrimary, btnSecondary, cardCls, inputCls, labelCls, selectCls } from './lib/ui';
-
-const TEMPLATES = ['general', 'couples', 'family', 'quinceanera', 'senior', 'newborn', 'engagement'];
+import { btnPrimary, btnSecondary, cardCls, inputCls, labelCls } from './lib/ui';
+import TemplatePicker from './TemplatePicker';
 
 function slugify(s: string): string {
   return s
@@ -59,18 +58,12 @@ export default function NewLandingPageForm({ studioId }: { studioId: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className={`${cardCls} max-w-lg space-y-4`}>
+    <form onSubmit={handleSubmit} className={`${cardCls} max-w-2xl space-y-4`}>
       {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div>
         <label className={labelCls}>Template / session type</label>
-        <select className={selectCls} value={template} onChange={(e) => setTemplate(e.target.value)}>
-          {TEMPLATES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+        <TemplatePicker value={template} onChange={setTemplate} />
       </div>
 
       <div>

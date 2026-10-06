@@ -37,6 +37,66 @@ const CSS_VAR_BY_KEY: Record<keyof LandingPageTheme, string> = {
   wine: '--wine',
 };
 
+export type ThemePreset = {
+  name: string;
+  colors: Required<LandingPageTheme>;
+};
+
+// Ready-made palettes shown as swatch cards in the admin so picking a look
+// doesn't require tuning 7 colors by hand. "Classic Parchment" mirrors the
+// brand defaults; the others swap the full set together for a cohesive feel.
+export const THEME_PRESETS: ThemePreset[] = [
+  { name: 'Classic Parchment', colors: { ...DEFAULT_THEME_COLORS } },
+  {
+    name: 'Midnight Wine',
+    colors: {
+      ink: '#f3ece0',
+      parchment: '#2a1418',
+      parchment_dim: '#241014',
+      clay: '#d98b5f',
+      moss: '#8a9a7a',
+      gold: '#e3b05f',
+      wine: '#7a3b42',
+    },
+  },
+  {
+    name: 'Spring Moss',
+    colors: {
+      ink: '#24291f',
+      parchment: '#f1f4ec',
+      parchment_dim: '#e4ead9',
+      clay: '#6b7f4f',
+      moss: '#46593a',
+      gold: '#c99a3e',
+      wine: '#5c3a3a',
+    },
+  },
+  {
+    name: 'Golden Hour',
+    colors: {
+      ink: '#2b1d10',
+      parchment: '#fbf0dd',
+      parchment_dim: '#f3e2c2',
+      clay: '#b5651d',
+      moss: '#73783e',
+      gold: '#d9a441',
+      wine: '#7a3420',
+    },
+  },
+  {
+    name: 'Blush Clay',
+    colors: {
+      ink: '#3a2420',
+      parchment: '#f7ece6',
+      parchment_dim: '#efdcd2',
+      clay: '#b5614a',
+      moss: '#7c8468',
+      gold: '#c99a5c',
+      wine: '#6e333a',
+    },
+  },
+];
+
 export function themeToStyle(theme: LandingPageTheme | null | undefined): CSSProperties {
   if (!theme) return {};
   const style: Record<string, string> = {};

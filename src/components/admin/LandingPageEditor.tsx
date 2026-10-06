@@ -15,8 +15,9 @@ import type {
   Product,
 } from '@/types/db';
 import { SECTION_LABELS, resolveSectionOrder } from '@/lib/landing/sections';
-import { DEFAULT_THEME_COLORS, THEME_COLOR_LABELS } from '@/lib/landing/theme';
+import { DEFAULT_THEME_COLORS, THEME_COLOR_LABELS, THEME_PRESETS } from '@/lib/landing/theme';
 import ImageUploadCrop from './ImageUploadCrop';
+import TemplatePicker from './TemplatePicker';
 import { uploadMedia } from './lib/storage';
 import { centsToDollarsInput, dollarsInputToCents } from './lib/format';
 import {
@@ -186,6 +187,10 @@ export default function LandingPageEditor({
 
   function setThemeColor(key: keyof LandingPageTheme, value: string) {
     setState((s) => ({ ...s, theme: { ...s.theme, [key]: value } }));
+  }
+
+  function applyThemePreset(colors: LandingPageTheme) {
+    setState((s) => ({ ...s, theme: { ...colors } }));
   }
 
   function resetThemeColor(key: keyof LandingPageTheme) {
@@ -363,22 +368,24 @@ export default function LandingPageEditor({
       {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {success && <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">Saved.</p>}
 
-      <div className={`${cardCls} grid grid-cols-1 gap-4 sm:grid-cols-3`}>
-        <div>
-          <label className={labelCls}>Status</label>
-          <select className={selectCls} value={state.status} onChange={(e) => set('status', e.target.value as LandingPageStatus)}>
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-            <option value="archived">Archived</option>
-          </select>
+      <div className={`${cardCls} space-y-4`}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelCls}>Status</label>
+            <select className={selectCls} value={state.status} onChange={(e) => set('status', e.target.value as LandingPageStatus)}>
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Slug</label>
+            <input className={inputCls} value={state.slug} onChange={(e) => set('slug', e.target.value)} />
+          </div>
         </div>
         <div>
-          <label className={labelCls}>Template</label>
-          <input className={inputCls} value={state.template} onChange={(e) => set('template', e.target.value)} />
-        </div>
-        <div>
-          <label className={labelCls}>Slug</label>
-          <input className={inputCls} value={state.slug} onChange={(e) => set('slug', e.target.value)} />
+          <label className={labelCls}>Template / session type</label>
+          <TemplatePicker value={state.template} onChange={(v) => set('template', v)} />
         </div>
       </div>
 
@@ -531,7 +538,31 @@ export default function LandingPageEditor({
       <div className={`${cardCls} space-y-4`}>
         <div>
           <h2 className="text-sm font-semibold text-gray-900">Color palette</h2>
-          <p className="text-xs text-gray-500">Leave a color untouched to use the studio&apos;s default.</p>
+          <p className="text-xs text-gray-500">Pick a preset to start from, then fine-tune any color below.</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {THEME_PRESETS.map((preset) => {
+            const isActive = (Object.keys(DEFAULT_THEME_COLORS) as (keyof LandingPageTheme)[]).every(
+              (key) => (state.theme[key] ?? DEFAULT_THEME_COLORS[key]) === preset.colors[key]
+            );
+            return (
+              <button
+                key={preset.name}
+                type="button"
+                onClick={() => applyThemePreset(preset.colors)}
+                className={`overflow-hidden rounded-lg border p-2 text-left transition ${
+                  isActive ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-200 hover:border-gray-400'
+                }`}
+              >
+                <div className="mb-2 flex h-10 overflow-hidden rounded-md">
+                  {(Object.keys(DEFAULT_THEME_COLORS) as (keyof LandingPageTheme)[]).map((key) => (
+                    <span key={key} className="flex-1" style={{ backgroundColor: preset.colors[key] }} />
+                  ))}
+                </div>
+                <span className="text-xs font-medium text-gray-800">{preset.name}</span>
+              </button>
+            );
+          })}
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {(Object.keys(DEFAULT_THEME_COLORS) as (keyof LandingPageTheme)[]).map((key) => {
