@@ -13,10 +13,16 @@ import type { SB } from './data';
 
 const BUCKET = 'landing-media';
 
-export async function uploadMedia(supabase: SB, folder: string, blob: Blob, ext = 'jpg'): Promise<string> {
+export async function uploadMedia(
+  supabase: SB,
+  folder: string,
+  blob: Blob,
+  ext = 'jpg',
+  contentType?: string
+): Promise<string> {
   const filename = `${folder}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from(BUCKET).upload(filename, blob, {
-    contentType: blob.type || 'image/jpeg',
+    contentType: contentType || blob.type || 'image/jpeg',
     upsert: false,
   });
   if (error) throw error;

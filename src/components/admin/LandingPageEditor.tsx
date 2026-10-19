@@ -35,6 +35,17 @@ import {
 
 const MAX_GALLERY = 6;
 const MAX_MUSIC_BYTES = 8 * 1024 * 1024;
+// iOS often reports an empty or nonstandard MIME type for downloaded audio
+// (and greys files out under a bare `audio/*` accept), so match on the
+// extension too and pick the content type ourselves.
+const MUSIC_TYPES: Record<string, string> = {
+  mp3: 'audio/mpeg',
+  m4a: 'audio/mp4',
+  aac: 'audio/aac',
+  wav: 'audio/wav',
+  ogg: 'audio/ogg',
+};
+const MUSIC_ACCEPT = ['audio/*', ...Object.keys(MUSIC_TYPES).map((ext) => `.${ext}`), 'audio/mpeg', 'audio/mp4'].join(',');
 
 interface EditorState {
   slug: string;
@@ -250,8 +261,10 @@ export default function LandingPageEditor({
   }
 
   async function handleMusicUpload(file: File) {
-    if (!file.type.startsWith('audio/')) {
-      setError('Please choose an audio file (MP3, M4A, OGG…).');
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+    const contentType = MUSIC_TYPES[ext] ?? (file.type.startsWith('audio/') ? file.type : null);
+    if (!contentType) {
+      setError('Please choose an audio file (MP3, M4A, AAC, WAV or OGG).');
       return;
     }
     if (file.size > MAX_MUSIC_BYTES) {
@@ -262,8 +275,7 @@ export default function LandingPageEditor({
     setError(null);
     try {
       const supabase = createClient();
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'mp3';
-      const url = await uploadMedia(supabase, 'music', file, ext);
+      const url = await uploadMedia(supabase, 'music', file, ext in MUSIC_TYPES ? ext : 'mp3', contentType);
       set('background_music_url', url);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Music upload failed.');
@@ -541,7 +553,7 @@ export default function LandingPageEditor({
           {uploadingMusic ? 'Uploading…' : state.background_music_url ? 'Replace music' : 'Upload music'}
           <input
             type="file"
-            accept="audio/*"
+            accept={MUSIC_ACCEPT}
             className="sr-only"
             disabled={uploadingMusic}
             onChange={(e) => {
