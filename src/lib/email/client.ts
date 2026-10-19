@@ -28,6 +28,8 @@ export async function sendEmailSafe(params: { to: string; content: EmailContent 
   try {
     const { error } = await getResendClient().emails.send({
       from: process.env.RESEND_FROM_EMAIL,
+      // The from address is send-only, so route client replies to a real inbox.
+      replyTo: process.env.RESEND_REPLY_TO_EMAIL || undefined,
       to,
       subject: content.subject,
       html: content.html,
