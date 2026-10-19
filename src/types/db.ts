@@ -98,6 +98,7 @@ export type LandingPage = {
 
   hero_image_url: string | null;
   about_image_url: string | null;
+  background_music_url: string | null;
   gallery: GalleryPhoto[];
   testimonials: Testimonial[];
   theme: LandingPageTheme;

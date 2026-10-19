@@ -39,6 +39,10 @@
     },
     "footer": {
       "tagline": "hidopastudio.com · @hidopastudio · Washington DC / MD / VA"
+    },
+    "music": {
+      "play": "Activar música",
+      "mute": "Silenciar música"
     }
   },
   "booking": {

@@ -34,6 +34,7 @@ import {
 } from './lib/ui';
 
 const MAX_GALLERY = 6;
+const MAX_MUSIC_BYTES = 8 * 1024 * 1024;
 
 interface EditorState {
   slug: string;
@@ -61,6 +62,7 @@ interface EditorState {
   closer_body_es: string;
   hero_image_url: string | null;
   about_image_url: string | null;
+  background_music_url: string | null;
   gallery: GalleryPhoto[];
   base_price: string;
   currency: string;
@@ -97,6 +99,7 @@ function fromPage(p: LandingPage): EditorState {
     closer_body_es: p.closer_body_es ?? '',
     hero_image_url: p.hero_image_url,
     about_image_url: p.about_image_url,
+    background_music_url: p.background_music_url ?? null,
     gallery: [...(p.gallery ?? [])].sort((a, b) => a.order - b.order),
     base_price: centsToDollarsInput(p.base_price_cents),
     currency: p.currency || 'usd',
@@ -169,6 +172,7 @@ export default function LandingPageEditor({
   const [saving, setSaving] = useState(false);
   const [uploadingHero, setUploadingHero] = useState(false);
   const [uploadingAbout, setUploadingAbout] = useState(false);
+  const [uploadingMusic, setUploadingMusic] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -245,6 +249,29 @@ export default function LandingPageEditor({
     }
   }
 
+  async function handleMusicUpload(file: File) {
+    if (!file.type.startsWith('audio/')) {
+      setError('Please choose an audio file (MP3, M4A, OGG…).');
+      return;
+    }
+    if (file.size > MAX_MUSIC_BYTES) {
+      setError('Music file is too large — keep it under 8 MB so the page stays fast.');
+      return;
+    }
+    setUploadingMusic(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'mp3';
+      const url = await uploadMedia(supabase, 'music', file, ext);
+      set('background_music_url', url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Music upload failed.');
+    } finally {
+      setUploadingMusic(false);
+    }
+  }
+
   async function handleGalleryUpload(blob: Blob) {
     if (state.gallery.length >= MAX_GALLERY) return;
     setUploadingGallery(true);
@@ -309,6 +336,7 @@ export default function LandingPageEditor({
         closer_body_es: state.closer_body_es || null,
         hero_image_url: state.hero_image_url,
         about_image_url: state.about_image_url,
+        background_music_url: state.background_music_url,
         gallery: state.gallery,
         base_price_cents: state.base_price ? dollarsInputToCents(state.base_price) : null,
         currency: state.currency || 'usd',
@@ -492,6 +520,37 @@ export default function LandingPageEditor({
         {state.gallery.length < MAX_GALLERY && (
           <ImageUploadCrop aspect={1} label="Add gallery photo" uploading={uploadingGallery} onCropped={handleGalleryUpload} />
         )}
+      </div>
+
+      <div className={`${cardCls} space-y-3`}>
+        <h2 className="text-sm font-semibold text-gray-900">Background music</h2>
+        <p className="text-xs text-gray-500">
+          Optional looping track (MP3/M4A, under 8 MB). Browsers don&apos;t allow sound before a visitor interacts, so
+          it starts on their first tap or click, and a floating button lets them mute it. Only use music you have the
+          rights to (royalty-free or licensed).
+        </p>
+        {state.background_music_url && (
+          <div className="flex flex-wrap items-center gap-3">
+            <audio controls src={state.background_music_url} className="h-10 max-w-full" />
+            <button type="button" className={btnSecondary} onClick={() => set('background_music_url', null)}>
+              Remove music
+            </button>
+          </div>
+        )}
+        <label className={`${btnSecondary} inline-flex cursor-pointer`}>
+          {uploadingMusic ? 'Uploading…' : state.background_music_url ? 'Replace music' : 'Upload music'}
+          <input
+            type="file"
+            accept="audio/*"
+            className="sr-only"
+            disabled={uploadingMusic}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (file) void handleMusicUpload(file);
+            }}
+          />
+        </label>
       </div>
 
       <div className={`${cardCls} space-y-4`}>

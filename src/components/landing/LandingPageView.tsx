@@ -7,6 +7,7 @@ import { resolveSectionOrder } from '@/lib/landing/sections';
 import { themeToStyle } from '@/lib/landing/theme';
 import { getTemplate } from '@/lib/landing/templates';
 import { Snowfall } from './Snowfall';
+import { BackgroundMusic } from './BackgroundMusic';
 import { renderDuo } from './Duo';
 import { TopMark } from './TopMark';
 import { LocaleSwitch } from './LocaleSwitch';
@@ -131,6 +132,9 @@ export async function LandingPageView({
   return (
     <div style={themeToStyle(page.theme)} className={`tpl-${page.template}`}>
       {getTemplate(page.template)?.decoration === 'snow' && <Snowfall />}
+      {page.background_music_url && (
+        <BackgroundMusic src={page.background_music_url} playLabel={t('music.play')} muteLabel={t('music.mute')} />
+      )}
       <MetaPixel pixelId={metaPixelId} />
       <TopMark studioName={studioName} region={t('topmark.region')} right={<LocaleSwitch locale={locale} />} />
 
