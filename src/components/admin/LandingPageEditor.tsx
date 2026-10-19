@@ -2,14 +2,27 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X } from 'lucide-react';
+import { ArrowDown, ArrowUp, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import type { DiscountCode, GalleryPhoto, LandingPage, LandingPageStatus, Location, Product } from '@/types/db';
+import type {
+  DiscountCode,
+  GalleryPhoto,
+  LandingPage,
+  LandingPageSectionKey,
+  LandingPageStatus,
+  LandingPageTheme,
+  Location,
+  Product,
+} from '@/types/db';
+import { SECTION_LABELS, resolveSectionOrder } from '@/lib/landing/sections';
+import { DEFAULT_THEME_COLORS, THEME_COLOR_LABELS, THEME_PRESETS } from '@/lib/landing/theme';
 import ImageUploadCrop from './ImageUploadCrop';
+import TemplatePicker from './TemplatePicker';
 import { uploadMedia } from './lib/storage';
 import { centsToDollarsInput, dollarsInputToCents } from './lib/format';
 import {
   btnDanger,
+  btnGhost,
   btnPrimary,
   btnSecondary,
   cardCls,
@@ -52,6 +65,8 @@ interface EditorState {
   currency: string;
   meta_pixel_id: string;
   discount_code_id: string;
+  theme: LandingPageTheme;
+  section_order: LandingPageSectionKey[];
 }
 
 function fromPage(p: LandingPage): EditorState {
@@ -86,6 +101,8 @@ function fromPage(p: LandingPage): EditorState {
     currency: p.currency || 'usd',
     meta_pixel_id: p.meta_pixel_id ?? '',
     discount_code_id: p.discount_code_id ?? '',
+    theme: p.theme ?? {},
+    section_order: resolveSectionOrder(p.section_order),
   };
 }
 
@@ -166,6 +183,32 @@ export default function LandingPageEditor({
 
   function toggleProduct(id: string) {
     setProductIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  function setThemeColor(key: keyof LandingPageTheme, value: string) {
+    setState((s) => ({ ...s, theme: { ...s.theme, [key]: value } }));
+  }
+
+  function applyThemePreset(colors: LandingPageTheme) {
+    setState((s) => ({ ...s, theme: { ...colors } }));
+  }
+
+  function resetThemeColor(key: keyof LandingPageTheme) {
+    setState((s) => {
+      const theme = { ...s.theme };
+      delete theme[key];
+      return { ...s, theme };
+    });
+  }
+
+  function moveSection(index: number, direction: -1 | 1) {
+    setState((s) => {
+      const next = [...s.section_order];
+      const swapWith = index + direction;
+      if (swapWith < 0 || swapWith >= next.length) return s;
+      [next[index], next[swapWith]] = [next[swapWith], next[index]];
+      return { ...s, section_order: next };
+    });
   }
 
   async function handleHeroUpload(blob: Blob) {
@@ -265,6 +308,8 @@ export default function LandingPageEditor({
         currency: state.currency || 'usd',
         meta_pixel_id: state.meta_pixel_id || null,
         discount_code_id: state.discount_code_id || null,
+        theme: state.theme,
+        section_order: state.section_order,
       })
       .eq('id', page.id);
 
@@ -323,22 +368,24 @@ export default function LandingPageEditor({
       {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {success && <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">Saved.</p>}
 
-      <div className={`${cardCls} grid grid-cols-1 gap-4 sm:grid-cols-3`}>
-        <div>
-          <label className={labelCls}>Status</label>
-          <select className={selectCls} value={state.status} onChange={(e) => set('status', e.target.value as LandingPageStatus)}>
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-            <option value="archived">Archived</option>
-          </select>
+      <div className={`${cardCls} space-y-4`}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelCls}>Status</label>
+            <select className={selectCls} value={state.status} onChange={(e) => set('status', e.target.value as LandingPageStatus)}>
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Slug</label>
+            <input className={inputCls} value={state.slug} onChange={(e) => set('slug', e.target.value)} />
+          </div>
         </div>
         <div>
-          <label className={labelCls}>Template</label>
-          <input className={inputCls} value={state.template} onChange={(e) => set('template', e.target.value)} />
-        </div>
-        <div>
-          <label className={labelCls}>Slug</label>
-          <input className={inputCls} value={state.slug} onChange={(e) => set('slug', e.target.value)} />
+          <label className={labelCls}>Template / session type</label>
+          <TemplatePicker value={state.template} onChange={(v) => set('template', v)} />
         </div>
       </div>
 
@@ -486,6 +533,98 @@ export default function LandingPageEditor({
           onEsChange={(v) => set('closer_body_es', v)}
           textarea
         />
+      </div>
+
+      <div className={`${cardCls} space-y-4`}>
+        <div>
+          <h2 className="text-sm font-semibold text-gray-900">Color palette</h2>
+          <p className="text-xs text-gray-500">Pick a preset to start from, then fine-tune any color below.</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {THEME_PRESETS.map((preset) => {
+            const isActive = (Object.keys(DEFAULT_THEME_COLORS) as (keyof LandingPageTheme)[]).every(
+              (key) => (state.theme[key] ?? DEFAULT_THEME_COLORS[key]) === preset.colors[key]
+            );
+            return (
+              <button
+                key={preset.name}
+                type="button"
+                onClick={() => applyThemePreset(preset.colors)}
+                className={`overflow-hidden rounded-lg border p-2 text-left transition ${
+                  isActive ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-200 hover:border-gray-400'
+                }`}
+              >
+                <div className="mb-2 flex h-10 overflow-hidden rounded-md">
+                  {(Object.keys(DEFAULT_THEME_COLORS) as (keyof LandingPageTheme)[]).map((key) => (
+                    <span key={key} className="flex-1" style={{ backgroundColor: preset.colors[key] }} />
+                  ))}
+                </div>
+                <span className="text-xs font-medium text-gray-800">{preset.name}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {(Object.keys(DEFAULT_THEME_COLORS) as (keyof LandingPageTheme)[]).map((key) => {
+            const isOverridden = Boolean(state.theme[key]);
+            const value = state.theme[key] ?? DEFAULT_THEME_COLORS[key];
+            return (
+              <div key={key} className="flex items-center gap-3 rounded-md border border-gray-200 p-2.5">
+                <input
+                  type="color"
+                  className="h-9 w-9 shrink-0 cursor-pointer rounded border border-gray-300 bg-white p-0.5"
+                  value={value}
+                  onChange={(e) => setThemeColor(key, e.target.value)}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm text-gray-800">{THEME_COLOR_LABELS[key]}</div>
+                  <div className="font-mono text-xs text-gray-400">{value}</div>
+                </div>
+                {isOverridden && (
+                  <button type="button" className={btnGhost} onClick={() => resetThemeColor(key)}>
+                    Reset
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className={`${cardCls} space-y-4`}>
+        <div>
+          <h2 className="text-sm font-semibold text-gray-900">Section order</h2>
+          <p className="text-xs text-gray-500">
+            Hero is always first and the footer always last. Reorder everything in between.
+          </p>
+        </div>
+        <div className="space-y-2">
+          {state.section_order.map((key, idx) => (
+            <div key={key} className="flex items-center justify-between rounded-md border border-gray-200 p-2.5">
+              <span className="text-sm text-gray-800">{SECTION_LABELS[key]}</span>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  className={btnGhost}
+                  disabled={idx === 0}
+                  onClick={() => moveSection(idx, -1)}
+                  title="Move up"
+                >
+                  <ArrowUp className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  className={btnGhost}
+                  disabled={idx === state.section_order.length - 1}
+                  onClick={() => moveSection(idx, 1)}
+                  title="Move down"
+                >
+                  <ArrowDown className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className={`${cardCls} grid grid-cols-1 gap-4 sm:grid-cols-3`}>

@@ -1,7 +1,10 @@
+import type { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
-import type { DiscountCode, LandingPage, Locale } from '@/types/db';
+import type { DiscountCode, LandingPage, LandingPageSectionKey, Locale } from '@/types/db';
 import { pickOptional, pickText } from '@/lib/landing/copy';
 import { formatDiscountValue } from '@/lib/landing/discount';
+import { resolveSectionOrder } from '@/lib/landing/sections';
+import { themeToStyle } from '@/lib/landing/theme';
 import { renderDuo } from './Duo';
 import { TopMark } from './TopMark';
 import { LocaleSwitch } from './LocaleSwitch';
@@ -75,8 +78,56 @@ export async function LandingPageView({
         }
       : null;
 
+  const sections: Record<LandingPageSectionKey, ReactNode> = {
+    gallery: (
+      <GalleryLightbox
+        key="gallery"
+        sectionId={GALLERY_ID}
+        eyebrow={t('gallery.eyebrow')}
+        heading={renderDuo(galleryHeading)}
+        photos={photos}
+        closeLabel={t('gallery.close')}
+        prevLabel={t('gallery.prev')}
+        nextLabel={t('gallery.next')}
+      />
+    ),
+    testimonials: (
+      <Testimonials
+        key="testimonials"
+        eyebrow={t('testimonials.eyebrow')}
+        heading={renderDuo(t('testimonials.heading'))}
+        items={testimonials}
+      />
+    ),
+    about: aboutHeading ? (
+      <About
+        key="about"
+        eyebrow={t('about.eyebrow')}
+        heading={aboutHeading}
+        body={aboutBody
+          .split(/\n+/)
+          .map((p) => p.trim())
+          .filter(Boolean)}
+        signature={t('about.signature', { studio: studioName })}
+        imageUrl={page.about_image_url ?? photos[1]?.url ?? page.hero_image_url}
+      />
+    ) : null,
+    closer: (
+      <Closer
+        key="closer"
+        sectionId={CLOSER_ID}
+        eyebrow={t('closer.eyebrow')}
+        heading={renderDuo(closerHeading)}
+        body={closerBody}
+        ticket={ticket}
+        ctaHref={bookHref}
+        ctaLabel={t('closer.cta')}
+      />
+    ),
+  };
+
   return (
-    <>
+    <div style={themeToStyle(page.theme)}>
       <MetaPixel pixelId={metaPixelId} />
       <TopMark studioName={studioName} region={t('topmark.region')} right={<LocaleSwitch locale={locale} />} />
 
@@ -92,46 +143,9 @@ export async function LandingPageView({
         scrollCueLabel={t('hero.scrollCue')}
       />
 
-      <GalleryLightbox
-        sectionId={GALLERY_ID}
-        eyebrow={t('gallery.eyebrow')}
-        heading={renderDuo(galleryHeading)}
-        photos={photos}
-        closeLabel={t('gallery.close')}
-        prevLabel={t('gallery.prev')}
-        nextLabel={t('gallery.next')}
-      />
-
-      <Testimonials
-        eyebrow={t('testimonials.eyebrow')}
-        heading={renderDuo(t('testimonials.heading'))}
-        items={testimonials}
-      />
-
-      {aboutHeading && (
-        <About
-          eyebrow={t('about.eyebrow')}
-          heading={aboutHeading}
-          body={aboutBody
-            .split(/\n+/)
-            .map((p) => p.trim())
-            .filter(Boolean)}
-          signature={t('about.signature', { studio: studioName })}
-          imageUrl={page.about_image_url ?? photos[1]?.url ?? page.hero_image_url}
-        />
-      )}
-
-      <Closer
-        sectionId={CLOSER_ID}
-        eyebrow={t('closer.eyebrow')}
-        heading={renderDuo(closerHeading)}
-        body={closerBody}
-        ticket={ticket}
-        ctaHref={bookHref}
-        ctaLabel={t('closer.cta')}
-      />
+      {resolveSectionOrder(page.section_order).map((key) => sections[key])}
 
       <Footer studioName={studioName} tagline={t('footer.tagline')} />
-    </>
+    </div>
   );
 }
