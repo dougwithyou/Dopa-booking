@@ -95,7 +95,23 @@ export const THEME_PRESETS: ThemePreset[] = [
       wine: '#6e333a',
     },
   },
+  {
+    name: 'Christmas Eve',
+    colors: {
+      ink: '#1d2620',
+      parchment: '#f8f2e7',
+      parchment_dim: '#eee3cf',
+      clay: '#a3212b',
+      moss: '#1f4d3a',
+      gold: '#c9a24a',
+      wine: '#5a161c',
+    },
+  },
 ];
+
+export function getThemePreset(name: string): ThemePreset | undefined {
+  return THEME_PRESETS.find((preset) => preset.name === name);
+}
 
 export function themeToStyle(theme: LandingPageTheme | null | undefined): CSSProperties {
   if (!theme) return {};

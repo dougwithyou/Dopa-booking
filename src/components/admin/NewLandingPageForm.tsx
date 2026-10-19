@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { btnPrimary, btnSecondary, cardCls, inputCls, labelCls } from './lib/ui';
 import TemplatePicker from './TemplatePicker';
+import { getTemplate } from '@/lib/landing/templates';
 
 function slugify(s: string): string {
   return s
@@ -37,6 +38,9 @@ export default function NewLandingPageForm({ studioId }: { studioId: string }) {
     setSaving(true);
     setError(null);
     const supabase = createClient();
+    // Seasonal templates seed their palette and starter copy; a headline
+    // typed here still wins over the starter one.
+    const tpl = getTemplate(template);
     const { data, error: insertError } = await supabase
       .from('landing_pages')
       .insert({
@@ -44,8 +48,10 @@ export default function NewLandingPageForm({ studioId }: { studioId: string }) {
         slug: slugify(slug),
         template,
         status: 'draft',
-        headline_en: headline.trim(),
-        headline_es: '',
+        ...(tpl?.starterCopy ?? {}),
+        ...(tpl?.theme ? { theme: tpl.theme } : {}),
+        headline_en: headline.trim() || tpl?.starterCopy?.headline_en || '',
+        headline_es: tpl?.starterCopy?.headline_es ?? '',
       })
       .select('id')
       .single();

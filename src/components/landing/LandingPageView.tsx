@@ -5,6 +5,8 @@ import { pickOptional, pickText } from '@/lib/landing/copy';
 import { formatDiscountValue } from '@/lib/landing/discount';
 import { resolveSectionOrder } from '@/lib/landing/sections';
 import { themeToStyle } from '@/lib/landing/theme';
+import { getTemplate } from '@/lib/landing/templates';
+import { Snowfall } from './Snowfall';
 import { renderDuo } from './Duo';
 import { TopMark } from './TopMark';
 import { LocaleSwitch } from './LocaleSwitch';
@@ -127,7 +129,8 @@ export async function LandingPageView({
   };
 
   return (
-    <div style={themeToStyle(page.theme)}>
+    <div style={themeToStyle(page.theme)} className={`tpl-${page.template}`}>
+      {getTemplate(page.template)?.decoration === 'snow' && <Snowfall />}
       <MetaPixel pixelId={metaPixelId} />
       <TopMark studioName={studioName} region={t('topmark.region')} right={<LocaleSwitch locale={locale} />} />
 

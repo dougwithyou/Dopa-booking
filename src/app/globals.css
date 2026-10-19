@@ -88,3 +88,29 @@ body {
     transform: translateX(0) scale(1);
   }
 }
+
+/* Christmas template: a light snow layer, and a cleaner photo grade than
+   the default warm fall-tone so reds and greens stay true. */
+.snowflake {
+  position: absolute;
+  top: -10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 3px rgba(31, 77, 58, 0.35);
+  animation-name: snow-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+@keyframes snow-fall {
+  to {
+    transform: translate3d(var(--drift, 0), 105vh, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .snowfall {
+    display: none;
+  }
+}
+.tpl-christmas .fall-tone {
+  filter: saturate(1.08) contrast(1.03);
+}

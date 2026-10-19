@@ -18,6 +18,7 @@ import { SECTION_LABELS, resolveSectionOrder } from '@/lib/landing/sections';
 import { DEFAULT_THEME_COLORS, THEME_COLOR_LABELS, THEME_PRESETS } from '@/lib/landing/theme';
 import ImageUploadCrop from './ImageUploadCrop';
 import TemplatePicker from './TemplatePicker';
+import { getTemplate } from '@/lib/landing/templates';
 import { uploadMedia } from './lib/storage';
 import { centsToDollarsInput, dollarsInputToCents } from './lib/format';
 import {
@@ -191,6 +192,11 @@ export default function LandingPageEditor({
 
   function applyThemePreset(colors: LandingPageTheme) {
     setState((s) => ({ ...s, theme: { ...colors } }));
+  }
+
+  function pickTemplate(value: string) {
+    const tpl = getTemplate(value);
+    setState((s) => ({ ...s, template: value, ...(tpl?.theme ? { theme: { ...tpl.theme } } : {}) }));
   }
 
   function resetThemeColor(key: keyof LandingPageTheme) {
@@ -385,7 +391,10 @@ export default function LandingPageEditor({
         </div>
         <div>
           <label className={labelCls}>Template / session type</label>
-          <TemplatePicker value={state.template} onChange={(v) => set('template', v)} />
+          <TemplatePicker value={state.template} onChange={pickTemplate} />
+          <p className="mt-1 text-xs text-gray-500">
+            Templates with their own palette (like Christmas) apply it below; you can still fine-tune the colors.
+          </p>
         </div>
       </div>
 
