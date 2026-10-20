@@ -2,6 +2,35 @@ import type { AvailabilitySlot, Booking, Client, Hold, LandingPage, Location, Lo
 import { formatCurrency, formatSlotDateTime } from './format';
 import { detailsBlockHtml, escapeHtml, renderHtmlEmail } from './layout';
 
+/** A paid extra (upsell order) bought together with the booking. */
+export interface BookingEmailExtra {
+  name: string;
+  quantity: number;
+  amountCents: number;
+  currency: string;
+}
+
+/** Detail rows for the extras plus a grand total; empty when there are none. */
+function extrasRows(
+  booking: Booking,
+  extras: BookingEmailExtra[],
+  locale: Locale,
+  labels: { session: string; total: string }
+): Array<[string, string]> {
+  if (extras.length === 0) return [];
+  const total = booking.amount_cents + extras.reduce((sum, e) => sum + e.amountCents, 0);
+  return [
+    [labels.session, formatCurrency(booking.amount_cents, booking.currency, locale)],
+    ...extras.map(
+      (e): [string, string] => [
+        e.quantity > 1 ? `${e.name} × ${e.quantity}` : e.name,
+        formatCurrency(e.amountCents, e.currency, locale),
+      ]
+    ),
+    [labels.total, formatCurrency(total, booking.currency, locale)],
+  ];
+}
+
 export interface EmailContent {
   subject: string;
   html: string;
@@ -40,7 +69,10 @@ const bookingConfirmationCopy = {
       location: 'Location',
       when: 'Date & time',
       paid: 'Amount paid',
+      sessionPrice: 'Session',
+      totalPaid: 'Total paid',
     },
+    extrasHeading: 'Payment details',
     closing:
       "If anything comes up or you need to reschedule, just reply to this email and we'll take care of it. See you soon!",
     signoff: '— Doug & Paola, Dopa Studio',
@@ -56,7 +88,10 @@ const bookingConfirmationCopy = {
       location: 'Ubicación',
       when: 'Fecha y hora',
       paid: 'Monto pagado',
+      sessionPrice: 'Sesión',
+      totalPaid: 'Total pagado',
     },
+    extrasHeading: 'Detalle del pago',
     closing:
       'Si surge algún imprevisto o necesitas reprogramar, solo responde a este correo y con gusto te ayudamos. ¡Nos vemos pronto!',
     signoff: '— Doug & Paola, Dopa Studio',
@@ -66,7 +101,15 @@ const bookingConfirmationCopy = {
   heading: string;
   greeting: (name: string) => string;
   intro: string;
-  detailLabels: { session: string; location: string; when: string; paid: string };
+  detailLabels: {
+    session: string;
+    location: string;
+    when: string;
+    paid: string;
+    sessionPrice: string;
+    totalPaid: string;
+  };
+  extrasHeading: string;
   closing: string;
   signoff: string;
 }>;
@@ -78,8 +121,10 @@ export function buildBookingConfirmationEmail(params: {
   location: Location | null;
   slot: AvailabilitySlot | null;
   locale: Locale;
+  extras?: BookingEmailExtra[];
 }): EmailContent {
   const { booking, client, landingPage, location, slot, locale } = params;
+  const extras = params.extras ?? [];
   const copy = bookingConfirmationCopy[locale];
   const sessionType = sessionTypeLabel(landingPage, locale);
   const clientName = client.name?.trim() || (locale === 'es' ? 'allí' : 'there');
@@ -91,8 +136,12 @@ export function buildBookingConfirmationEmail(params: {
     [copy.detailLabels.session, sessionType],
     [copy.detailLabels.location, where],
     [copy.detailLabels.when, when],
-    [copy.detailLabels.paid, paid],
+    ...(extras.length === 0 ? ([[copy.detailLabels.paid, paid]] as Array<[string, string]>) : []),
   ];
+  const paymentRows = extrasRows(booking, extras, locale, {
+    session: copy.detailLabels.sessionPrice,
+    total: copy.detailLabels.totalPaid,
+  });
 
   const html = renderHtmlEmail({
     preheading: copy.intro,
@@ -101,6 +150,11 @@ export function buildBookingConfirmationEmail(params: {
       <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.greeting(clientName))}</p>
       <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${copy.intro}</p>
       ${detailsBlockHtml(detailsRows)}
+      ${
+        paymentRows.length > 0
+          ? `<p style="margin:16px 0 0;font-size:15px;font-weight:bold;line-height:1.5;">${escapeHtml(copy.extrasHeading)}</p>${detailsBlockHtml(paymentRows)}`
+          : ''
+      }
       <p style="margin:16px 0 4px;font-size:15px;line-height:1.5;">${copy.closing}</p>
       <p style="margin:16px 0 0;font-size:15px;line-height:1.5;">${copy.signoff}</p>
     `,
@@ -114,7 +168,9 @@ export function buildBookingConfirmationEmail(params: {
     `${copy.detailLabels.session}: ${sessionType}`,
     `${copy.detailLabels.location}: ${where}`,
     `${copy.detailLabels.when}: ${when}`,
-    `${copy.detailLabels.paid}: ${paid}`,
+    ...(paymentRows.length > 0
+      ? ['', copy.extrasHeading, ...paymentRows.map(([label, value]) => `${label}: ${value}`)]
+      : [`${copy.detailLabels.paid}: ${paid}`]),
     '',
     copy.closing,
     '',
@@ -134,23 +190,32 @@ export function buildAdminBookingNotificationEmail(params: {
   landingPage: LandingPage;
   location: Location | null;
   slot: AvailabilitySlot | null;
+  extras?: BookingEmailExtra[];
 }): EmailContent {
   const { booking, client, landingPage, location, slot } = params;
+  const extras = params.extras ?? [];
   const locale: Locale = 'en';
   const sessionType = sessionTypeLabel(landingPage, locale);
   const clientName = client.name?.trim() || client.email;
   const where = location?.name ?? 'location TBD';
   const when = slot ? formatSlotDateTime(slot.start_time, locale) : 'time TBD';
-  const amount = formatCurrency(booking.amount_cents, booking.currency, locale);
+  const amount = formatCurrency(
+    booking.amount_cents + extras.reduce((sum, e) => sum + e.amountCents, 0),
+    booking.currency,
+    locale
+  );
 
-  const summary = `New booking: ${clientName}, ${sessionType}, ${where}, ${when}, ${amount}`;
+  const summary = `New booking: ${clientName}, ${sessionType}, ${where}, ${when}, ${amount}${
+    extras.length > 0 ? ` (incl. ${extras.length} extra${extras.length > 1 ? 's' : ''})` : ''
+  }`;
 
   const detailsRows: Array<[string, string]> = [
     ['Client', `${clientName} (${client.email}${client.phone ? `, ${client.phone}` : ''})`],
     ['Session', sessionType],
     ['Location', where],
     ['When', when],
-    ['Amount', amount],
+    ...extrasRows(booking, extras, locale, { session: 'Session price', total: 'Total paid' }),
+    ...(extras.length === 0 ? ([['Amount', amount]] as Array<[string, string]>) : []),
     ['Booking ID', booking.id],
   ];
 

@@ -120,6 +120,12 @@ async function handleSessionCompleted(
   }
 
   if (type === 'booking') {
+    // Extras added on the checkout step ride on the same session. Mark them
+    // paid first: confirmBooking sends the confirmation email, which lists them.
+    const extrasPaid = await markSessionUpsellOrdersPaid(db, session);
+    if (extrasPaid > 0) {
+      console.info('[stripe-webhook] checkout extras paid', { bookingId, count: extrasPaid });
+    }
     const result = await confirmBooking(db, {
       bookingId,
       paymentIntentId: paymentIntentId(session),
@@ -130,11 +136,6 @@ async function handleSessionCompleted(
       bookingId,
       alreadyConfirmed: result.alreadyConfirmed,
     });
-    // Extras added on the checkout step ride on the same session.
-    const extrasPaid = await markSessionUpsellOrdersPaid(db, session);
-    if (extrasPaid > 0) {
-      console.info('[stripe-webhook] checkout extras paid', { bookingId, count: extrasPaid });
-    }
     return;
   }
 

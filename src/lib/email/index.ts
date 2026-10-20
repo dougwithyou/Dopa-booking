@@ -3,6 +3,7 @@ import type { AvailabilitySlot, Booking, Client, Hold, LandingPage, Location, Lo
 import { sendEmailSafe } from './client';
 import { resolveLocale } from './format';
 import {
+  type BookingEmailExtra,
   buildAdminBookingNotificationEmail,
   buildBookingConfirmationEmail,
   buildContractSignedNotificationEmail,
@@ -25,6 +26,7 @@ export async function sendBookingConfirmation(params: {
   location: Location | null;
   slot: AvailabilitySlot | null;
   locale: Locale;
+  extras?: BookingEmailExtra[];
 }): Promise<void> {
   const locale = resolveLocale(params.locale);
   const content = buildBookingConfirmationEmail({ ...params, locale });
@@ -41,6 +43,7 @@ export async function sendAdminBookingNotification(params: {
   landingPage: LandingPage;
   location: Location | null;
   slot: AvailabilitySlot | null;
+  extras?: BookingEmailExtra[];
 }): Promise<void> {
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
   if (!adminEmail) {

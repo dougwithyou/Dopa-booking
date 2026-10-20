@@ -373,6 +373,8 @@ interface BookingEmailContext {
   location: Location | null;
   slot: AvailabilitySlot | null;
   locale: Locale;
+  /** Paid extras bought in the same checkout, listed in the emails. */
+  extras: { name: string; quantity: number; amountCents: number; currency: string }[];
 }
 
 // `typeof import(...)` is a type-only reference (no runtime require), so the
@@ -426,6 +428,39 @@ export async function sendBookingEmailsSafely(ctx: BookingEmailContext): Promise
  * Safe to call twice for the same booking (Stripe retries webhooks): the
  * status transition is guarded so the side effects only run once.
  */
+/**
+ * Paid upsell orders on a booking with their product names, for the
+ * confirmation emails. Fails soft (empty list) — never blocks confirmation.
+ */
+async function fetchPaidExtras(
+  db: AdminDb,
+  bookingId: string
+): Promise<BookingEmailContext['extras']> {
+  try {
+    const { data, error } = await db
+      .from('upsell_orders')
+      .select('quantity, amount_cents, currency, products(name)')
+      .eq('booking_id', bookingId)
+      .eq('status', 'paid')
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return ((data as unknown as {
+      quantity: number;
+      amount_cents: number;
+      currency: string;
+      products: { name: string } | null;
+    }[] | null) ?? []).map((row) => ({
+      name: row.products?.name ?? 'Extra',
+      quantity: row.quantity,
+      amountCents: row.amount_cents,
+      currency: row.currency,
+    }));
+  } catch (error) {
+    console.error('[payments] failed to load paid extras for email', { bookingId, error });
+    return [];
+  }
+}
+
 export async function confirmBooking(
   db: AdminDb,
   params: {
@@ -514,6 +549,7 @@ export async function confirmBooking(
       location,
       slot,
       locale,
+      extras: await fetchPaidExtras(db, confirmed.id),
     });
   } else {
     console.error('[payments] skipping booking emails — missing client or landing page', {
