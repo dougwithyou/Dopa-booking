@@ -21,15 +21,19 @@ import { enUS, es } from 'date-fns/locale';
 import { createClient } from '@/lib/supabase/client';
 import { dateKey, formatTimeLabel } from '@/lib/booking/format';
 import { cn } from '@/lib/cn';
-import type { AvailabilitySlot } from '@/types/db';
+import type { AvailabilitySlot, PublicSlot } from '@/types/db';
 
 const AVAILABILITY_HORIZON_DAYS = 90;
+// Re-check availability while the visitor is on this step, so a slot
+// another client starts checking out greys out without a reload.
+const REFRESH_MS = 30_000;
 
 /**
- * Reads are RLS-scoped to `is_blocked = false`, but holds/bookings aren't
- * publicly readable, so this is a best-effort list: a slot shown here could
- * be taken by someone else a moment later. The hold-creation call in the
- * next step is the real source of truth and returns 409 if that happens.
+ * Slots come from the public_slot_availability() SQL function, which flags
+ * each one as free or taken (booked, or held by someone mid-checkout)
+ * without exposing who. Taken slots render greyed out and unclickable. The
+ * hold-creation call in the next step remains the real source of truth and
+ * returns 409 if a slot was taken in the last few seconds.
  */
 export function DateTimeStep({
   locationId,
@@ -48,7 +52,7 @@ export function DateTimeStep({
 }) {
   const t = useTranslations('booking.datetime');
   const dfLocale = locale === 'es' ? es : enUS;
-  const [slots, setSlots] = useState<AvailabilitySlot[] | null>(null);
+  const [slots, setSlots] = useState<PublicSlot[] | null>(null);
   const [error, setError] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [viewMonth, setViewMonth] = useState<Date>(() => startOfMonth(new Date()));
@@ -61,34 +65,40 @@ export function DateTimeStep({
     setSelectedDate(null);
 
     const supabase = createClient();
-    const horizon = new Date();
-    horizon.setDate(horizon.getDate() + AVAILABILITY_HORIZON_DAYS);
 
-    supabase
-      .from('availability_slots')
-      .select('*')
-      .eq('location_id', locationId)
-      .eq('is_blocked', false)
-      .gt('start_time', new Date().toISOString())
-      .lt('start_time', horizon.toISOString())
-      .order('start_time', { ascending: true })
-      .then(({ data, error: err }) => {
-        if (cancelled) return;
-        if (err) {
-          setError(true);
-          setSlots([]);
-          return;
-        }
-        setSlots(data ?? []);
-      });
+    const load = (silent: boolean) => {
+      const horizon = new Date();
+      horizon.setDate(horizon.getDate() + AVAILABILITY_HORIZON_DAYS);
+      supabase
+        .rpc('public_slot_availability', {
+          p_location_id: locationId,
+          p_from: new Date().toISOString(),
+          p_to: horizon.toISOString(),
+        })
+        .then(({ data, error: err }) => {
+          if (cancelled) return;
+          if (err) {
+            // A failed background refresh keeps the list already on screen.
+            if (!silent) {
+              setError(true);
+              setSlots([]);
+            }
+            return;
+          }
+          setSlots((data as PublicSlot[] | null) ?? []);
+        });
+    };
 
+    load(false);
+    const id = window.setInterval(() => load(true), REFRESH_MS);
     return () => {
       cancelled = true;
+      window.clearInterval(id);
     };
   }, [locationId, refreshToken, reloadKey]);
 
   const byDate = useMemo(() => {
-    const map = new Map<string, AvailabilitySlot[]>();
+    const map = new Map<string, PublicSlot[]>();
     for (const slot of slots ?? []) {
       const key = dateKey(slot.start_time);
       const bucket = map.get(key);
@@ -98,17 +108,24 @@ export function DateTimeStep({
     return map;
   }, [slots]);
 
-  const dateKeys = useMemo(() => Array.from(byDate.keys()), [byDate]);
+  // Days with at least one free slot (fully taken days are greyed out).
+  const dateKeys = useMemo(
+    () => Array.from(byDate.keys()).filter((key) => byDate.get(key)!.some((s) => s.available)),
+    [byDate]
+  );
 
   // Jump the visible month to the first day that actually has openings, once
   // slots have loaded — otherwise an admin who only opened up next month
   // would land on an empty grid with no obvious way to know where to look.
+  const firstOpenDate = dateKeys[0] ?? null;
   useEffect(() => {
-    if (dateKeys.length > 0) {
-      const first = byDate.get(dateKeys[0])![0];
+    if (firstOpenDate) {
+      const first = byDate.get(firstOpenDate)![0];
       setViewMonth(startOfMonth(new Date(first.start_time)));
     }
-  }, [dateKeys, byDate]);
+    // Only when the first open day changes — not on every background refresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstOpenDate]);
 
   useEffect(() => {
     if (!selectedDate && dateKeys.length > 0) {
@@ -134,7 +151,8 @@ export function DateTimeStep({
 
   const canGoPrev = isAfter(startOfMonth(viewMonth), startOfMonth(today));
   const canGoNext = isBefore(startOfMonth(viewMonth), startOfMonth(horizonEnd));
-  const monthHasOpenings = calendarDays.some((d) => isSameMonth(d, viewMonth) && byDate.has(format(d, 'yyyy-MM-dd')));
+  const openDays = useMemo(() => new Set(dateKeys), [dateKeys]);
+  const monthHasOpenings = calendarDays.some((d) => isSameMonth(d, viewMonth) && openDays.has(format(d, 'yyyy-MM-dd')));
 
   return (
     <div>
@@ -153,7 +171,7 @@ export function DateTimeStep({
             {t('retry')}
           </button>
         </div>
-      ) : slots.length === 0 ? (
+      ) : dateKeys.length === 0 ? (
         <p className="font-body text-sm text-ink/70">{t('empty')}</p>
       ) : (
         <div className="space-y-8">
@@ -196,7 +214,7 @@ export function DateTimeStep({
                 {calendarDays.map((day) => {
                   const key = format(day, 'yyyy-MM-dd');
                   const inMonth = isSameMonth(day, viewMonth);
-                  const hasSlots = inMonth && byDate.has(key);
+                  const hasSlots = inMonth && openDays.has(key);
                   const isPast = isBefore(day, today);
                   const isSelected = key === selectedDate;
                   const disabled = !hasSlots || isPast;
@@ -239,17 +257,36 @@ export function DateTimeStep({
               <div className="flex flex-wrap gap-2">
                 {byDate.get(selectedDate)!.map((slot) => {
                   const active = slot.id === selectedSlotId;
+                  const taken = !slot.available;
                   return (
                     <button
                       key={slot.id}
                       type="button"
-                      onClick={() => onSelect(slot)}
+                      disabled={taken}
+                      aria-label={taken ? `${formatTimeLabel(slot.start_time)} — ${t('taken')}` : undefined}
+                      onClick={() =>
+                        onSelect({
+                          id: slot.id,
+                          location_id: slot.location_id,
+                          start_time: slot.start_time,
+                          end_time: slot.end_time,
+                          is_blocked: false,
+                          created_at: '',
+                        } satisfies AvailabilitySlot)
+                      }
                       className={cn(
-                        'border px-4 py-2.5 font-body text-sm tabular-nums transition-colors',
-                        active ? 'border-clay bg-clay text-parchment' : 'border-ink/15 text-ink hover:border-ink/35'
+                        'flex flex-col items-center border px-4 py-2.5 font-body text-sm tabular-nums transition-colors',
+                        taken
+                          ? 'cursor-not-allowed border-ink/10 bg-ink/[0.06] text-ink/35'
+                          : active
+                            ? 'border-clay bg-clay text-parchment'
+                            : 'border-ink/15 text-ink hover:border-ink/35'
                       )}
                     >
-                      {formatTimeLabel(slot.start_time)}
+                      <span className={cn(taken && 'line-through')}>{formatTimeLabel(slot.start_time)}</span>
+                      {taken && (
+                        <span className="text-[9px] font-semibold uppercase tracking-[0.12em] no-underline">{t('taken')}</span>
+                      )}
                     </button>
                   );
                 })}

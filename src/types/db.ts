@@ -115,6 +115,16 @@ export type LandingPage = {
   updated_at: string;
 };
 
+/** A bookable slot as the public booking flow sees it (see migration 0015). */
+export type PublicSlot = {
+  id: string;
+  location_id: string;
+  start_time: string;
+  end_time: string;
+  /** false while another client holds it at checkout or it's booked. */
+  available: boolean;
+};
+
 export type AvailabilitySlot = {
   id: string;
   location_id: string;
@@ -315,6 +325,10 @@ export interface Database {
       is_studio_admin: {
         Args: { p_studio_id: string };
         Returns: boolean;
+      };
+      public_slot_availability: {
+        Args: { p_location_id: string; p_from: string; p_to: string };
+        Returns: PublicSlot[];
       };
     };
     Enums: Record<string, never>;

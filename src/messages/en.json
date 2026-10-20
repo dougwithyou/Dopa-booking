@@ -75,7 +75,8 @@
       "retry": "Retry",
       "selectDate": "Select a date",
       "selectTime": "Select a time",
-      "next": "Continue"
+      "next": "Continue",
+      "taken": "Taken"
     },
     "contact": {
       "heading": "Your info",

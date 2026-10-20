@@ -75,7 +75,8 @@
       "retry": "Reintentar",
       "selectDate": "Selecciona una fecha",
       "selectTime": "Selecciona una hora",
-      "next": "Continuar"
+      "next": "Continuar",
+      "taken": "Ocupado"
     },
     "contact": {
       "heading": "Tus datos",
