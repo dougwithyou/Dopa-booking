@@ -1,41 +1,42 @@
 'use client';
 
-import { pad2, useCountdown } from '@/lib/countdown';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { DAY_MS, formatUntilDate, pad2, useCountdown } from '@/lib/countdown';
 
 /**
- * Discount countdown on the landing page closer. With a day or more left it
- * shows days / hours / minutes (seconds ticking that far out is noise);
- * under 24 hours it switches to hours / minutes / seconds for urgency.
+ * Discount expiry on the landing page closer. More than a day out it just
+ * says until when ("Hasta 15-Nov"); inside the last 24 hours it becomes a
+ * live hours / minutes / seconds countdown for urgency.
  */
 export function Countdown({
   expiresAt,
-  daysLabel,
+  locale,
+  untilLabel,
   hoursLabel,
   minutesLabel,
   secondsLabel,
 }: {
   expiresAt: string;
-  daysLabel: string;
+  locale: string;
+  untilLabel: string;
   hoursLabel: string;
   minutesLabel: string;
   secondsLabel: string;
 }) {
-  const { days, hours, minutes, seconds, totalMs } = useCountdown(expiresAt);
-  const units =
-    totalMs >= DAY_MS
-      ? [
-          { value: days, label: daysLabel },
-          { value: hours, label: hoursLabel },
-          { value: minutes, label: minutesLabel },
-        ]
-      : [
-          { value: hours, label: hoursLabel },
-          { value: minutes, label: minutesLabel },
-          { value: seconds, label: secondsLabel },
-        ];
+  const { hours, minutes, seconds, totalMs } = useCountdown(expiresAt);
 
+  if (totalMs >= DAY_MS) {
+    return (
+      <div className="text-center font-body text-[13px] font-semibold uppercase tracking-[0.18em] text-ink">
+        {untilLabel} {formatUntilDate(expiresAt, locale)}
+      </div>
+    );
+  }
+
+  const units = [
+    { value: hours, label: hoursLabel },
+    { value: minutes, label: minutesLabel },
+    { value: seconds, label: secondsLabel },
+  ];
   return (
     <div className="flex justify-center gap-[18px]">
       {units.map((unit) => (

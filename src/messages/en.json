@@ -32,11 +32,12 @@
       "eyebrow": "Last chance",
       "headingDefault": "Your session, **with a discount**.",
       "ticketLabel": "{value} off · applied automatically",
-      "days": "Days",
       "hours": "Hours",
       "minutes": "Min",
       "seconds": "Sec",
-      "cta": "Book my date now"
+      "cta": "Book my date now",
+      "useCode": "Use code",
+      "until": "Until"
     },
     "footer": {
       "tagline": "hidopastudio.com · @hidopastudio · Washington DC / MD / VA"
@@ -48,9 +49,10 @@
     },
     "banner": {
       "off": "{value} off",
-      "code": "Code",
+      "code": "Use code",
       "endsIn": "Ends in",
-      "cta": "Book now"
+      "cta": "Book now",
+      "until": "Until"
     }
   },
   "booking": {

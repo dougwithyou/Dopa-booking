@@ -32,11 +32,12 @@
       "eyebrow": "Última oportunidad",
       "headingDefault": "Tu sesión, **con descuento**.",
       "ticketLabel": "{value} de descuento · aplicado automáticamente",
-      "days": "Días",
       "hours": "Horas",
       "minutes": "Min",
       "seconds": "Seg",
-      "cta": "Reservar mi fecha ahora"
+      "cta": "Reservar mi fecha ahora",
+      "useCode": "Usa el código",
+      "until": "Hasta"
     },
     "footer": {
       "tagline": "hidopastudio.com · @hidopastudio · Washington DC / MD / VA"
@@ -48,9 +49,10 @@
     },
     "banner": {
       "off": "{value} de descuento",
-      "code": "Código",
+      "code": "Usa el código",
       "endsIn": "Termina en",
-      "cta": "Reservar ahora"
+      "cta": "Reservar ahora",
+      "until": "Hasta"
     }
   },
   "booking": {
