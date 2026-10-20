@@ -53,6 +53,11 @@
       "endsIn": "Termina en",
       "cta": "Reservar ahora",
       "until": "Hasta"
+    },
+    "extras": {
+      "eyebrow": "Extras",
+      "heading": "Hazla aún más **especial**",
+      "note": "Complementos opcionales que puedes agregar al reservar tu sesión."
     }
   },
   "booking": {

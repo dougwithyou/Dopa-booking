@@ -74,7 +74,7 @@ export type LandingPageStatus = 'draft' | 'published' | 'archived';
 
 // Hero and Footer are fixed as the first/last elements; only these four are
 // reorderable from the admin.
-export type LandingPageSectionKey = 'gallery' | 'testimonials' | 'about' | 'closer';
+export type LandingPageSectionKey = 'gallery' | 'testimonials' | 'about' | 'extras' | 'closer';
 
 export type LandingPage = {
   id: string;

@@ -53,6 +53,11 @@
       "endsIn": "Ends in",
       "cta": "Book now",
       "until": "Until"
+    },
+    "extras": {
+      "eyebrow": "Extras",
+      "heading": "Make it even more **special**",
+      "note": "Optional add-ons you can include when you book your session."
     }
   },
   "booking": {

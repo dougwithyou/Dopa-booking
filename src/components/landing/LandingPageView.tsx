@@ -17,6 +17,7 @@ import { GalleryLightbox } from './GalleryLightbox';
 import { Testimonials } from './Testimonials';
 import { About } from './About';
 import { Closer } from './Closer';
+import { Extras, type ExtraShowcaseItem } from './Extras';
 import { Footer } from './Footer';
 import { MetaPixel } from './MetaPixel';
 
@@ -37,6 +38,7 @@ export async function LandingPageView({
   metaPixelId,
   discount,
   bookHref,
+  extras = [],
 }: {
   page: LandingPage;
   locale: Locale;
@@ -44,6 +46,8 @@ export async function LandingPageView({
   metaPixelId: string | null;
   discount: DiscountCode | null;
   bookHref: string;
+  /** Upsell products shown (without prices) in the extras showcase. */
+  extras?: ExtraShowcaseItem[];
 }) {
   const t = await getTranslations({ locale, namespace: 'landing' });
 
@@ -121,6 +125,15 @@ export async function LandingPageView({
         imageUrl={page.about_image_url ?? photos[1]?.url ?? page.hero_image_url}
       />
     ) : null,
+    extras: (
+      <Extras
+        key="extras"
+        eyebrow={t('extras.eyebrow')}
+        heading={renderDuo(t('extras.heading'))}
+        note={t('extras.note')}
+        items={extras}
+      />
+    ),
     closer: (
       <Closer
         key="closer"
