@@ -32,6 +32,7 @@ export function HeroSlideshow({ urls, className }: { urls: string[]; className?:
           <div
             key={url}
             className="absolute inset-0 transition-opacity duration-[1600ms] ease-in-out"
+            data-active={i === active ? 'true' : undefined}
             style={{ opacity: i === active ? 1 : 0 }}
           >
             <div className={cn('absolute inset-0', moving && (i % 2 === 0 ? 'kenburns-in' : 'kenburns-out'))}>

@@ -31,7 +31,10 @@ body {
   color: transparent;
   -webkit-text-stroke: 1.4px currentColor;
   text-stroke: 1.4px currentColor;
-  -webkit-text-stroke-color: var(--clay);
+  /* --duo-color is set per word by HeroDuoContrast in the hero when the
+     accent wouldn't be legible over the photo behind it. */
+  -webkit-text-stroke-color: var(--duo-color, var(--clay));
+  transition: -webkit-text-stroke-color 0.6s ease;
 }
 .duo::before {
   content: attr(data-text);
@@ -40,7 +43,8 @@ body {
   left: 0;
   width: 52%;
   overflow: hidden;
-  color: var(--clay);
+  color: var(--duo-color, var(--clay));
+  transition: color 0.6s ease;
   -webkit-text-stroke: 0;
   white-space: nowrap;
 }

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Photo } from './Photo';
 import { HeroSlideshow } from './HeroSlideshow';
 import { HeroScrollReveal } from './HeroScrollReveal';
+import { HeroDuoContrast } from './HeroDuoContrast';
 
 export function Hero({
   eyebrow,
@@ -30,6 +31,7 @@ export function Hero({
   return (
     <HeroScrollReveal>
     <section className="relative h-full w-full overflow-hidden">
+      <HeroDuoContrast />
       {slideshowUrls.length > 1 ? (
         <HeroSlideshow urls={slideshowUrls} className="absolute inset-0 h-full w-full" />
       ) : (
