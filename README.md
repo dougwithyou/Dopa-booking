@@ -112,10 +112,17 @@ configurations — nothing below carries over automatically.** Do this the
 day Dopa Studio is ready to accept real payments (production domain is
 `https://book.hidopastudio.com`):
 
+0. **Before switching**, delete (or cancel with refund) any test bookings
+   from the admin — after the switch their test-mode payments can't be
+   refunded with the live key, and they keep their time slots taken.
 1. In the Stripe Dashboard, flip the **Sandbox/Live** switch to **Live**.
 2. Grab the **live** keys (Developers → API keys) — `sk_live_...` /
    `pk_live_...` — and update `STRIPE_SECRET_KEY` /
-   `STRIPE_PUBLISHABLE_KEY` in Vercel's env vars. Trigger a redeploy.
+   `STRIPE_PUBLISHABLE_KEY` in Vercel's env vars. Also update
+   `STRIPE_CONNECT_CLIENT_ID` to the **live** Connect client ID
+   (Settings → Connect → Onboarding options → OAuth, `ca_...` shown while
+   in Live mode) — the test-mode one only authorizes test connections.
+   Trigger a redeploy.
 3. Still in **Live** mode, create a **new** webhook/event destination at
    `https://book.hidopastudio.com/api/webhooks/stripe`:
    - Events: `checkout.session.completed`,
