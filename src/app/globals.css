@@ -145,3 +145,40 @@ body {
     animation: none;
   }
 }
+
+/* Scroll-driven hero text (HeroScrollReveal sets --hero-p from 0 to 1 as
+   the visitor scrolls through the pinned hero). Each line has its own
+   staggered window of that progress, rising 60px while fading in. */
+.hero-reveal {
+  --hero-p: 0;
+}
+.hero-reveal-1,
+.hero-reveal-2,
+.hero-reveal-3,
+.hero-reveal-4 {
+  opacity: var(--e);
+  transform: translate3d(0, calc((1 - var(--e)) * 60px), 0);
+  will-change: opacity, transform;
+}
+.hero-reveal-1 {
+  --e: clamp(0, calc(var(--hero-p) / 0.45), 1);
+}
+.hero-reveal-2 {
+  --e: clamp(0, calc((var(--hero-p) - 0.12) / 0.45), 1);
+}
+.hero-reveal-3 {
+  --e: clamp(0, calc((var(--hero-p) - 0.3) / 0.45), 1);
+}
+.hero-reveal-4 {
+  --e: clamp(0, calc((var(--hero-p) - 0.45) / 0.55), 1);
+}
+/* Buttons only become clickable once they've mostly arrived. */
+.hero-reveal-4 a {
+  pointer-events: none;
+}
+.hero-revealed .hero-reveal-4 a {
+  pointer-events: auto;
+}
+.hero-scroll-cue {
+  opacity: calc(0.75 * (1 - var(--hero-p)));
+}

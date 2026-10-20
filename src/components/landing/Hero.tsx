@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Photo } from './Photo';
 import { HeroSlideshow } from './HeroSlideshow';
+import { HeroScrollReveal } from './HeroScrollReveal';
 
 export function Hero({
   eyebrow,
@@ -27,7 +28,8 @@ export function Hero({
   scrollCueLabel: string;
 }) {
   return (
-    <section className="relative h-[100svh] min-h-[640px] w-full overflow-hidden">
+    <HeroScrollReveal>
+    <section className="relative h-full w-full overflow-hidden">
       {slideshowUrls.length > 1 ? (
         <HeroSlideshow urls={slideshowUrls} className="absolute inset-0 h-full w-full" />
       ) : (
@@ -43,19 +45,19 @@ export function Hero({
 
       <div className="absolute inset-x-0 bottom-0 z-[2] px-[6vw] pb-16 text-parchment">
         {eyebrow && (
-          <span className="mb-[18px] block animate-[rise_0.9s_0.2s_ease_forwards] font-body text-[11px] font-semibold uppercase tracking-[0.28em] text-gold opacity-0">
+          <span className="mb-[18px] hero-reveal-1 block font-body text-[11px] font-semibold uppercase tracking-[0.28em] text-gold">
             {eyebrow}
           </span>
         )}
-        <h1 className="max-w-[14ch] animate-[rise_0.9s_0.4s_ease_forwards] font-display text-[clamp(40px,7.2vw,92px)] font-black leading-[1.02] tracking-[-0.01em] opacity-0">
+        <h1 className="hero-reveal-2 max-w-[14ch] font-display text-[clamp(40px,7.2vw,92px)] font-black leading-[1.02] tracking-[-0.01em]">
           {headline}
         </h1>
         {subheadline && (
-          <p className="mt-5 max-w-[44ch] animate-[rise_0.9s_0.6s_ease_forwards] font-body text-[15px] font-light leading-[1.7] text-[#e6ddcd] opacity-0">
+          <p className="hero-reveal-3 mt-5 max-w-[44ch] font-body text-[15px] font-light leading-[1.7] text-[#e6ddcd]">
             {subheadline}
           </p>
         )}
-        <div className="mt-8 flex animate-[rise_0.9s_0.8s_ease_forwards] flex-wrap items-center gap-5 opacity-0">
+        <div className="hero-reveal-4 mt-8 flex flex-wrap items-center gap-5">
           <a
             href={ctaPrimaryHref}
             className="inline-flex items-center gap-2.5 bg-clay px-[30px] py-4 font-body text-xs font-semibold uppercase tracking-[0.14em] text-parchment transition-[background,transform] duration-300 hover:-translate-y-0.5 hover:bg-wine"
@@ -72,11 +74,12 @@ export function Hero({
       </div>
 
       <div
-        className="absolute bottom-[26px] right-[6vw] z-[2] flex items-center gap-2.5 font-body text-[10px] uppercase tracking-[0.2em] text-[#e6ddcd] opacity-75 after:block after:h-[46px] after:w-px after:bg-[#e6ddcd]"
+        className="hero-scroll-cue absolute bottom-[26px] right-[6vw] z-[2] flex items-center gap-2.5 font-body text-[10px] uppercase tracking-[0.2em] text-[#e6ddcd] opacity-75 after:block after:h-[46px] after:w-px after:bg-[#e6ddcd]"
         style={{ writingMode: 'vertical-rl' }}
       >
         {scrollCueLabel}
       </div>
     </section>
+    </HeroScrollReveal>
   );
 }
