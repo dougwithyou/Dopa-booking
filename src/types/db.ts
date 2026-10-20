@@ -201,6 +201,10 @@ export type Booking = {
   stripe_payment_intent_id: string | null;
   stripe_checkout_session_id: string | null;
   paid_at: string | null;
+  cancelled_at: string | null;
+  refunded_at: string | null;
+  refund_amount_cents: number | null;
+  stripe_refund_id: string | null;
   source_promo_param: string | null;
   admin_note: string | null;
   created_by_admin: boolean;
@@ -221,6 +225,7 @@ export type UpsellOrder = {
   stripe_checkout_session_id: string | null;
   status: UpsellOrderStatus;
   fulfilled_at: string | null;
+  refunded_at: string | null;
   created_at: string;
 };
 

@@ -358,3 +358,101 @@ export function buildContractSignedNotificationEmail(params: {
 
   return { subject: summary, html, text };
 }
+
+// ---------------------------------------------------------------------------
+// Booking cancellation (client-facing, bilingual)
+// ---------------------------------------------------------------------------
+
+const bookingCancellationCopy = {
+  en: {
+    subject: (sessionType: string) => `Booking cancelled — ${sessionType} with Dopa Studio`,
+    heading: 'Your session has been cancelled',
+    greeting: (name: string) => `Hi ${name},`,
+    intro: 'This is to let you know that the following session has been cancelled:',
+    detailLabels: { session: 'Session', location: 'Location', when: 'Date & time', refund: 'Refund' },
+    refunded: (amount: string) =>
+      `We've issued a refund of ${amount} to your original payment method. Depending on your bank, it can take 5–10 business days to appear.`,
+    noRefund: 'No refund has been issued for this booking.',
+    closing: "If you have any questions or would like to book a new date, just reply to this email — we're happy to help.",
+    signoff: '— Doug & Paola, Dopa Studio',
+  },
+  es: {
+    subject: (sessionType: string) => `Reserva cancelada — ${sessionType} con Dopa Studio`,
+    heading: 'Tu sesión ha sido cancelada',
+    greeting: (name: string) => `Hola ${name},`,
+    intro: 'Te escribimos para confirmarte que la siguiente sesión ha sido cancelada:',
+    detailLabels: { session: 'Sesión', location: 'Ubicación', when: 'Fecha y hora', refund: 'Reembolso' },
+    refunded: (amount: string) =>
+      `Hemos emitido un reembolso de ${amount} a tu método de pago original. Según tu banco, puede tardar de 5 a 10 días hábiles en reflejarse.`,
+    noRefund: 'No se ha emitido ningún reembolso por esta reserva.',
+    closing: 'Si tienes alguna pregunta o quieres reservar una nueva fecha, solo responde a este correo — con gusto te ayudamos.',
+    signoff: '— Doug & Paola, Dopa Studio',
+  },
+} satisfies Record<Locale, {
+  subject: (sessionType: string) => string;
+  heading: string;
+  greeting: (name: string) => string;
+  intro: string;
+  detailLabels: { session: string; location: string; when: string; refund: string };
+  refunded: (amount: string) => string;
+  noRefund: string;
+  closing: string;
+  signoff: string;
+}>;
+
+export function buildBookingCancellationEmail(params: {
+  client: Client;
+  landingPage: LandingPage | null;
+  location: Location | null;
+  slot: AvailabilitySlot | null;
+  locale: Locale;
+  /** Amount refunded, in the booking's currency; null when no refund was issued. */
+  refund: { amountCents: number; currency: string } | null;
+}): EmailContent {
+  const { client, landingPage, location, slot, locale, refund } = params;
+  const copy = bookingCancellationCopy[locale];
+  const sessionType = landingPage
+    ? sessionTypeLabel(landingPage, locale)
+    : locale === 'es'
+      ? 'Sesión de fotos'
+      : 'Photo session';
+  const clientName = client.name?.trim() || (locale === 'es' ? 'allí' : 'there');
+  const refundAmount = refund ? formatCurrency(refund.amountCents, refund.currency, locale) : null;
+
+  const detailsRows: Array<[string, string]> = [
+    [copy.detailLabels.session, sessionType],
+    [copy.detailLabels.location, locationLine(location, locale)],
+    [copy.detailLabels.when, dateTimeLine(slot, locale)],
+    ...(refundAmount ? ([[copy.detailLabels.refund, refundAmount]] as Array<[string, string]>) : []),
+  ];
+  const refundLine = refundAmount ? copy.refunded(refundAmount) : copy.noRefund;
+
+  const html = renderHtmlEmail({
+    preheading: copy.heading,
+    heading: copy.heading,
+    bodyHtml: `
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.greeting(clientName))}</p>
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.intro)}</p>
+      ${detailsBlockHtml(detailsRows)}
+      <p style="margin:16px 0 4px;font-size:15px;line-height:1.5;">${escapeHtml(refundLine)}</p>
+      <p style="margin:16px 0 4px;font-size:15px;line-height:1.5;">${escapeHtml(copy.closing)}</p>
+      <p style="margin:16px 0 0;font-size:15px;line-height:1.5;">${copy.signoff}</p>
+    `,
+  });
+
+  const text = [
+    copy.greeting(clientName),
+    '',
+    copy.intro,
+    '',
+    ...detailsRows.map(([label, value]) => `${label}: ${value}`),
+    '',
+    refundLine,
+    '',
+    copy.closing,
+    '',
+    copy.signoff,
+  ].join('\n');
+
+  return { subject: copy.subject(sessionType), html, text };
+}

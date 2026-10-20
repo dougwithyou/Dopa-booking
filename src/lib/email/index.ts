@@ -5,6 +5,7 @@ import { resolveLocale } from './format';
 import {
   type BookingEmailExtra,
   buildAdminBookingNotificationEmail,
+  buildBookingCancellationEmail,
   buildBookingConfirmationEmail,
   buildContractSignedNotificationEmail,
   buildHoldExpirationReminderEmail,
@@ -94,4 +95,20 @@ export async function sendContractSignedNotification(params: {
   }
   const content = buildContractSignedNotificationEmail(params);
   await sendEmailSafe({ to: adminEmail, content });
+}
+
+/**
+ * Tells the client their booking was cancelled by the studio, and whether a
+ * refund was issued. Bilingual; fails soft like the others.
+ */
+export async function sendBookingCancellation(params: {
+  client: Client;
+  landingPage: LandingPage | null;
+  location: Location | null;
+  slot: AvailabilitySlot | null;
+  locale: Locale;
+  refund: { amountCents: number; currency: string } | null;
+}): Promise<void> {
+  const content = buildBookingCancellationEmail({ ...params, locale: resolveLocale(params.locale) });
+  await sendEmailSafe({ to: params.client.email, content });
 }

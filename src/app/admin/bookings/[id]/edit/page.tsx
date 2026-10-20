@@ -15,7 +15,7 @@ export default async function EditBookingPage({ params }: { params: { id: string
   const { data: booking } = await supabase.from('bookings').select('*').eq('id', params.id).single();
   if (!booking) notFound();
 
-  const [{ data: client }, { data: location }, { data: landingPage }, { data: slot }] = await Promise.all([
+  const [{ data: client }, { data: location }, { data: landingPage }, { data: slot }, { data: paidExtras }] = await Promise.all([
     booking.client_id ? supabase.from('clients').select('*').eq('id', booking.client_id).single() : Promise.resolve({ data: null }),
     booking.location_id
       ? supabase.from('locations').select('*').eq('id', booking.location_id).single()
@@ -26,7 +26,13 @@ export default async function EditBookingPage({ params }: { params: { id: string
     booking.slot_id
       ? supabase.from('availability_slots').select('*').eq('id', booking.slot_id).single()
       : Promise.resolve({ data: null }),
+    supabase
+      .from('upsell_orders')
+      .select('amount_cents, stripe_payment_intent_id')
+      .eq('booking_id', booking.id)
+      .eq('status', 'paid'),
   ]);
+  const extras = (paidExtras as { amount_cents: number; stripe_payment_intent_id: string | null }[] | null) ?? [];
 
   return (
     <div className="space-y-6">
@@ -60,7 +66,12 @@ export default async function EditBookingPage({ params }: { params: { id: string
         </dl>
       </div>
 
-      <BookingEditForm booking={booking} />
+      <BookingEditForm
+        booking={booking}
+        clientEmail={client?.email ?? null}
+        paidExtrasCents={extras.reduce((sum, e) => sum + e.amount_cents, 0)}
+        hasStripeExtras={extras.some((e) => Boolean(e.stripe_payment_intent_id))}
+      />
     </div>
   );
 }
