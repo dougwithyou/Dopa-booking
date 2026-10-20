@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import type Stripe from 'stripe';
 import { connectedAccount, getStripe, siteUrl } from '@/lib/stripe';
-import type { Booking, Client, DiscountCode, LandingPage, Locale, Studio } from '@/types/db';
+import type { Booking, Client, DiscountCode, LandingPage, Locale, Product, Studio, UpsellOrder } from '@/types/db';
 import {
   adminDb,
   applyDiscount,
@@ -27,26 +27,45 @@ const DEFAULT_CURRENCY = 'usd';
 // Stripe's minimum Checkout Session lifetime (30 minutes).
 const CHECKOUT_SESSION_TTL_SECONDS = 30 * 60;
 
+// Same caps as /api/upsell-checkout.
+const MAX_DISTINCT_ITEMS = 10;
+const MAX_QUANTITY = 20;
+
 const CheckoutSchema = z.object({
   holdId: z.string().uuid(),
   landingPageId: z.string().uuid(),
   promoParam: z.string().trim().max(120).nullish(),
   locale: z.enum(['en', 'es']),
+  // Optional extras picked on the checkout step, charged in the same session.
+  items: z
+    .array(
+      z.object({
+        productId: z.string().uuid(),
+        quantity: z.number().int().min(1).max(MAX_QUANTITY),
+      })
+    )
+    .max(MAX_DISTINCT_ITEMS * 2)
+    .optional(),
 });
 
 /**
  * POST /api/checkout
  *
- * Body: { holdId, landingPageId, promoParam?, locale }
+ * Body: { holdId, landingPageId, promoParam?, locale, items?: [{ productId, quantity }] }
  * 200:  { url }                         — Stripe Checkout Session URL
  * 409:  { error: 'hold_expired' }       — hold released or past expires_at
  * 409:  { error: 'slot_unavailable' }   — slot got booked by someone else
  * 400:  { error: 'stripe_not_connected' } — studio has no connected account
+ * 400:  { error: 'invalid_products' | 'too_many_items' | 'mixed_currency' }
  *
  * Creates a `pending` booking (which makes `slot_is_available()` return false,
  * locking the slot for the duration of checkout) and then a Checkout Session
  * *on the studio's connected account*. The webhook flips the booking to
  * `confirmed` and releases the hold.
+ *
+ * Extras (`items`) become `pending` upsell_orders rows stamped with the same
+ * Checkout Session and are added as extra line items; the webhook marks them
+ * `paid` together with the booking (or `cancelled` if the session expires).
  */
 export async function POST(request: NextRequest) {
   let payload: z.infer<typeof CheckoutSchema>;
@@ -108,6 +127,13 @@ export async function POST(request: NextRequest) {
     const amountCents = applyDiscount(basePriceCents, discountCode);
     const currency = (landingPage.currency || DEFAULT_CURRENCY).toLowerCase();
 
+    // ---- Extras -------------------------------------------------------------
+    const extras = await resolveExtras(db, studio.id, currency, payload.items ?? []);
+    if ('error' in extras) {
+      return jsonError(400, extras.error);
+    }
+    const extrasTotalCents = extras.lines.reduce((sum, line) => sum + line.amountCents, 0);
+
     // ---- Client (CRM) -----------------------------------------------------
     const client: Client = await upsertClient(db, {
       studioId: studio.id,
@@ -167,17 +193,73 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const successUrlBase = `${siteUrl()}/${locale}/booking/${booking.id}/upsell`;
+    // Clients who already added extras skip the post-payment upsell page.
+    const successUrlBase =
+      extras.lines.length > 0
+        ? `${siteUrl()}/${locale}/booking/${booking.id}/confirmation`
+        : `${siteUrl()}/${locale}/booking/${booking.id}/upsell`;
     const cancelUrl = `${siteUrl()}/${locale}/l/${landingPage.slug}`;
 
     // ---- Fully-discounted session: nothing to charge ----------------------
     // Stripe rejects a zero-amount Checkout Session, so a 100%-off code
     // confirms the booking straight away and sends the client to the same
     // success page the webhook would have taken them to.
-    if (amountCents <= 0) {
+    if (amountCents + extrasTotalCents <= 0) {
       await confirmBooking(db, { bookingId: booking.id, locale });
       return NextResponse.json({ url: successUrlBase });
     }
+
+    // ---- pending upsell_orders for the extras -------------------------------
+    let orderIds: string[] = [];
+    if (extras.lines.length > 0) {
+      const { data: insertedOrders, error: insertError } = await db
+        .from('upsell_orders')
+        .insert(
+          extras.lines.map((line) => ({
+            booking_id: booking.id,
+            product_id: line.product.id,
+            quantity: line.quantity,
+            amount_cents: line.amountCents,
+            currency,
+            status: 'pending' as const,
+          }))
+        )
+        .select('*');
+      if (insertError) throw insertError;
+      orderIds = ((insertedOrders as UpsellOrder[] | null) ?? []).map((order) => order.id);
+    }
+
+    const metadata: Stripe.MetadataParam = {
+      type: 'booking',
+      bookingId: booking.id,
+      studioId: studio.id,
+      locale,
+    };
+    // Stripe caps a metadata value at 500 chars; the webhook matches on the
+    // session id first anyway.
+    const joinedOrderIds = orderIds.join(',');
+    if (joinedOrderIds && joinedOrderIds.length <= 450) {
+      metadata.upsellOrderIds = joinedOrderIds;
+    }
+
+    // A 100%-off session with paid extras: Stripe can't take a zero-amount
+    // line, so only the extras are charged.
+    const sessionLine: Stripe.Checkout.SessionCreateParams.LineItem[] =
+      amountCents > 0
+        ? [
+            {
+              quantity: 1,
+              price_data: {
+                currency,
+                unit_amount: amountCents,
+                product_data: {
+                  name: sessionLineItemName(landingPage, locale),
+                  description: sessionLineItemDescription(location.name, slot.start_time, studio, locale),
+                },
+              },
+            },
+          ]
+        : [];
 
     // ---- Stripe Checkout Session (on the connected account) ---------------
     const stripe = getStripe();
@@ -187,29 +269,20 @@ export async function POST(request: NextRequest) {
       client_reference_id: booking.id,
       customer_email: client.email,
       line_items: [
-        {
-          quantity: 1,
+        ...sessionLine,
+        ...extras.lines.map((line) => ({
+          quantity: line.quantity,
           price_data: {
             currency,
-            unit_amount: amountCents,
+            unit_amount: line.product.price_cents,
             product_data: {
-              name: sessionLineItemName(landingPage, locale),
-              description: sessionLineItemDescription(
-                location.name,
-                slot.start_time,
-                studio,
-                locale
-              ),
+              name: truncate(line.product.name, 250),
+              ...(line.product.description ? { description: truncate(line.product.description, 250) } : {}),
             },
           },
-        },
+        })),
       ],
-      metadata: {
-        type: 'booking',
-        bookingId: booking.id,
-        studioId: studio.id,
-        locale,
-      },
+      metadata,
       payment_intent_data: {
         metadata: {
           type: 'booking',
@@ -233,6 +306,9 @@ export async function POST(request: NextRequest) {
       );
     } catch (error) {
       // Don't leave a pending booking squatting on the slot if Stripe rejected us.
+      if (orderIds.length > 0) {
+        await db.from('upsell_orders').update({ status: 'cancelled' }).in('id', orderIds);
+      }
       await db
         .from('bookings')
         .update({ status: 'cancelled' })
@@ -240,6 +316,16 @@ export async function POST(request: NextRequest) {
         .eq('status', 'pending');
       console.error('[checkout] Stripe session creation failed', error);
       return jsonError(502, 'stripe_session_failed');
+    }
+
+    if (orderIds.length > 0) {
+      const { error: orderStampError } = await db
+        .from('upsell_orders')
+        .update({ stripe_checkout_session_id: session.id })
+        .in('id', orderIds);
+      if (orderStampError) {
+        console.error('[checkout] failed to stamp upsell orders with session id', orderStampError);
+      }
     }
 
     if (!session.url) {
@@ -324,4 +410,52 @@ function sessionLineItemDescription(
   }
   const description = `${locationName} — ${when}`;
   return description.length > 250 ? `${description.slice(0, 247)}...` : description;
+}
+
+type ExtraLine = { product: Product; quantity: number; amountCents: number };
+
+/**
+ * Validates the extras picked on the checkout step: merges duplicate ids,
+ * caps quantities, and requires active products of this studio priced in
+ * the booking's currency (one Checkout Session = one currency).
+ */
+async function resolveExtras(
+  db: AdminDb,
+  studioId: string,
+  currency: string,
+  items: { productId: string; quantity: number }[]
+): Promise<{ lines: ExtraLine[] } | { error: 'invalid_products' | 'too_many_items' | 'mixed_currency' }> {
+  if (items.length === 0) return { lines: [] };
+
+  const quantities = new Map<string, number>();
+  for (const item of items) {
+    quantities.set(item.productId, Math.min(MAX_QUANTITY, (quantities.get(item.productId) ?? 0) + item.quantity));
+  }
+  if (quantities.size > MAX_DISTINCT_ITEMS) return { error: 'too_many_items' };
+
+  const { data, error } = await db
+    .from('products')
+    .select('*')
+    .eq('studio_id', studioId)
+    .eq('is_active', true)
+    .in('id', [...quantities.keys()]);
+  if (error) throw error;
+  const products = (data as Product[] | null) ?? [];
+  if (products.length !== quantities.size || products.some((p) => p.price_cents <= 0)) {
+    return { error: 'invalid_products' };
+  }
+  if (products.some((p) => (p.currency || DEFAULT_CURRENCY).toLowerCase() !== currency)) {
+    return { error: 'mixed_currency' };
+  }
+
+  return {
+    lines: products.map((product) => {
+      const quantity = quantities.get(product.id) ?? 1;
+      return { product, quantity, amountCents: product.price_cents * quantity };
+    }),
+  };
+}
+
+function truncate(value: string, max: number): string {
+  return value.length > max ? `${value.slice(0, max - 3)}...` : value;
 }

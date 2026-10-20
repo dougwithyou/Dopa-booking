@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import type { AppLocale } from '@/i18n/routing';
-import type { AvailabilitySlot, Location } from '@/types/db';
+import type { AvailabilitySlot, Location, Product } from '@/types/db';
 import type { BookingStep, HoldResponse } from '@/lib/booking/types';
 import { formatDateTimeLabel } from '@/lib/booking/format';
 import { Stepper } from './Stepper';
@@ -13,18 +13,30 @@ import { DateTimeStep } from './DateTimeStep';
 import { ContactStep } from './ContactStep';
 import { CheckoutStep } from './CheckoutStep';
 
+export type CheckoutOffer = {
+  /** Landing page list price, before any discount. */
+  baseCents: number;
+  /** What the session will actually be charged (after the auto/promo discount). */
+  sessionCents: number;
+  currency: string;
+  /** Extras that can be added to the same payment. */
+  products: Product[];
+};
+
 export function BookingFlow({
   locale,
   slug,
   landingPageId,
   locations,
   initialPromo,
+  offer,
 }: {
   locale: AppLocale;
   slug: string;
   landingPageId: string;
   locations: Location[];
   initialPromo: string | null;
+  offer: CheckoutOffer;
 }) {
   const t = useTranslations('booking');
 
@@ -124,6 +136,7 @@ export function BookingFlow({
           landingPageId={landingPageId}
           promoParam={initialPromo}
           locale={locale}
+          offer={offer}
           onExpired={() => {
             setHold(null);
             setSlot(null);

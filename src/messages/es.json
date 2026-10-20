@@ -92,7 +92,16 @@
       "proceed": "Continuar al pago",
       "processing": "Redirigiendo al pago…",
       "chooseAgain": "Elegir un nuevo horario",
-      "errorGeneric": "Algo salió mal al iniciar el pago. Intenta de nuevo."
+      "errorGeneric": "Algo salió mal al iniciar el pago. Intenta de nuevo.",
+      "extrasTitle": "Completa tu sesión",
+      "extrasSubtitle": "Extras opcionales — agrégalos ahora y paga todo junto.",
+      "add": "Agregar",
+      "added": "Agregado",
+      "remove": "Quitar",
+      "ticketTitle": "Tu pedido",
+      "session": "Sesión de fotos",
+      "discount": "Descuento aplicado",
+      "total": "Total"
     },
     "summary": {
       "location": "Ubicación",

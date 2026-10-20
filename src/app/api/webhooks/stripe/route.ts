@@ -130,6 +130,11 @@ async function handleSessionCompleted(
       bookingId,
       alreadyConfirmed: result.alreadyConfirmed,
     });
+    // Extras added on the checkout step ride on the same session.
+    const extrasPaid = await markSessionUpsellOrdersPaid(db, session);
+    if (extrasPaid > 0) {
+      console.info('[stripe-webhook] checkout extras paid', { bookingId, count: extrasPaid });
+    }
     return;
   }
 
@@ -141,18 +146,22 @@ async function handleSessionCompleted(
   console.warn('[stripe-webhook] unknown metadata type', { type, sessionId: session.id });
 }
 
-async function markUpsellOrdersPaid(
-  db: AdminDb,
-  session: Stripe.Checkout.Session,
-  bookingId: string
-): Promise<void> {
-  const patch = {
+function upsellPaidPatch(session: Stripe.Checkout.Session) {
+  return {
     status: 'paid' as const,
     stripe_payment_intent_id: paymentIntentId(session),
     stripe_checkout_session_id: session.id,
   };
+}
 
-  // Primary match: the rows we stamped with this session id at creation time.
+/**
+ * Marks the pending upsell orders that belong to this Checkout Session as
+ * paid — matched by the session id stamped at creation, falling back to the
+ * id list in metadata. Returns how many rows were updated.
+ */
+async function markSessionUpsellOrdersPaid(db: AdminDb, session: Stripe.Checkout.Session): Promise<number> {
+  const patch = upsellPaidPatch(session);
+
   const { data: bySession, error: bySessionError } = await db
     .from('upsell_orders')
     .update(patch)
@@ -160,43 +169,38 @@ async function markUpsellOrdersPaid(
     .eq('status', 'pending')
     .select('id');
   if (bySessionError) throw bySessionError;
+  if (Array.isArray(bySession) && bySession.length > 0) return bySession.length;
 
-  if (Array.isArray(bySession) && bySession.length > 0) {
-    console.info('[stripe-webhook] upsell orders paid', {
-      bookingId,
-      count: bySession.length,
-    });
-    return;
-  }
-
-  // Fallback: the explicit id list from metadata (session-id stamp may have
-  // failed to write).
+  // The session-id stamp may have failed to write.
   const idList = metadataString(session.metadata, 'upsellOrderIds');
-  if (idList) {
-    const ids = idList.split(',').filter(Boolean);
-    if (ids.length > 0) {
-      const { data, error } = await db
-        .from('upsell_orders')
-        .update(patch)
-        .in('id', ids)
-        .eq('status', 'pending')
-        .select('id');
-      if (error) throw error;
-      if (Array.isArray(data) && data.length > 0) {
-        console.info('[stripe-webhook] upsell orders paid via metadata ids', {
-          bookingId,
-          count: data.length,
-        });
-        return;
-      }
-    }
+  const ids = idList?.split(',').filter(Boolean) ?? [];
+  if (ids.length === 0) return 0;
+  const { data, error } = await db
+    .from('upsell_orders')
+    .update(patch)
+    .in('id', ids)
+    .eq('status', 'pending')
+    .select('id');
+  if (error) throw error;
+  return Array.isArray(data) ? data.length : 0;
+}
+
+async function markUpsellOrdersPaid(
+  db: AdminDb,
+  session: Stripe.Checkout.Session,
+  bookingId: string
+): Promise<void> {
+  const count = await markSessionUpsellOrdersPaid(db, session);
+  if (count > 0) {
+    console.info('[stripe-webhook] upsell orders paid', { bookingId, count });
+    return;
   }
 
   // Last resort: any still-pending order on the booking. Better to mark them
   // paid than to lose a paid order; logged loudly for reconciliation.
   const { data: byBooking, error: byBookingError } = await db
     .from('upsell_orders')
-    .update(patch)
+    .update(upsellPaidPatch(session))
     .eq('booking_id', bookingId)
     .eq('status', 'pending')
     .select('id');
@@ -223,14 +227,13 @@ async function handleSessionExpired(
     metadataString(session.metadata, 'bookingId') ?? session.client_reference_id ?? undefined;
   if (!bookingId) return;
 
-  if (type === 'upsell') {
-    await db
-      .from('upsell_orders')
-      .update({ status: 'cancelled' })
-      .eq('stripe_checkout_session_id', session.id)
-      .eq('status', 'pending');
-    return;
-  }
+  // Upsell sessions, and extras added on a booking's checkout step (also
+  // when the client retried and this older session was superseded).
+  await db
+    .from('upsell_orders')
+    .update({ status: 'cancelled' })
+    .eq('stripe_checkout_session_id', session.id)
+    .eq('status', 'pending');
 
   if (type !== 'booking') return;
 

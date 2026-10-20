@@ -92,7 +92,16 @@
       "proceed": "Proceed to payment",
       "processing": "Redirecting to payment…",
       "chooseAgain": "Choose a new time",
-      "errorGeneric": "Something went wrong starting checkout. Please try again."
+      "errorGeneric": "Something went wrong starting checkout. Please try again.",
+      "extrasTitle": "Complete your session",
+      "extrasSubtitle": "Optional extras — add them now and pay everything together.",
+      "add": "Add",
+      "added": "Added",
+      "remove": "Remove",
+      "ticketTitle": "Your order",
+      "session": "Photo session",
+      "discount": "Discount applied",
+      "total": "Total"
     },
     "summary": {
       "location": "Location",
