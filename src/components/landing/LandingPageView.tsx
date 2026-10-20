@@ -53,6 +53,8 @@ export async function LandingPageView({
   const ctaSecondary =
     pickText(locale, page.cta_secondary_en, page.cta_secondary_es) || t('hero.ctaSecondaryDefault');
 
+  const galleryEyebrow =
+    pickText(locale, page.gallery_eyebrow_en, page.gallery_eyebrow_es) || t('gallery.eyebrow');
   const galleryHeading =
     pickText(locale, page.gallery_heading_en, page.gallery_heading_es) || t('gallery.headingDefault');
   const aboutHeading = pickOptional(locale, page.about_heading_en, page.about_heading_es);
@@ -75,6 +77,7 @@ export async function LandingPageView({
           code: discount.code,
           label: t('closer.ticketLabel', { value: formatDiscountValue(discount) }),
           expiresAt: discount.expires_at,
+          daysLabel: t('closer.days'),
           hoursLabel: t('closer.hours'),
           minutesLabel: t('closer.minutes'),
           secondsLabel: t('closer.seconds'),
@@ -86,7 +89,7 @@ export async function LandingPageView({
       <GalleryLightbox
         key="gallery"
         sectionId={GALLERY_ID}
-        eyebrow={t('gallery.eyebrow')}
+        eyebrow={galleryEyebrow}
         heading={renderDuo(galleryHeading)}
         photos={photos}
         closeLabel={t('gallery.close')}

@@ -89,6 +89,7 @@ export type LandingPage = {
   cta_primary_en: string | null; cta_primary_es: string | null;
   cta_secondary_en: string | null; cta_secondary_es: string | null;
 
+  gallery_eyebrow_en: string | null; gallery_eyebrow_es: string | null;
   gallery_heading_en: string | null; gallery_heading_es: string | null;
   about_heading_en: string | null; about_heading_es: string | null;
   about_body_en: string | null; about_body_es: string | null;

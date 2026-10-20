@@ -20,6 +20,8 @@ export const LandingCopySchema = z.object({
   cta_primary_es: z.string(),
   cta_secondary_en: z.string(),
   cta_secondary_es: z.string(),
+  gallery_eyebrow_en: z.string(),
+  gallery_eyebrow_es: z.string(),
   gallery_heading_en: z.string(),
   gallery_heading_es: z.string(),
   about_heading_en: z.string(),
@@ -42,6 +44,7 @@ const SYSTEM_PROMPT = `You write the copy for a photography studio's bilingual (
 - subheadline: one or two sentences under the headline saying what the session is and who it's for.
 - cta_primary: the main button that jumps to booking (2-4 words, an action).
 - cta_secondary: the second button that scrolls to the photo gallery (2-4 words).
+- gallery_eyebrow: a tiny uppercase label above the gallery heading (1-3 words, e.g. "Latest sessions").
 - gallery_heading: heading above the photo gallery (3-7 words).
 - about_heading and about_body: a short section about the studio and its approach to this kind of session. about_body is 2 short paragraphs separated by a blank line, written in the studio's warm first-person-plural voice.
 - closer_heading and closer_body: the final section right above the booking button - a gentle nudge to book now (closer_body: 1-2 sentences).

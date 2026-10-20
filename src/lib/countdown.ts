@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 
 export interface CountdownParts {
+  days: number;
+  /** Hours within the current day (0-23); see `days` for the rest. */
   hours: number;
   minutes: number;
   seconds: number;
@@ -12,7 +14,8 @@ export interface CountdownParts {
 function computeParts(targetMs: number): CountdownParts {
   const diff = Math.max(0, targetMs - Date.now());
   return {
-    hours: Math.floor(diff / 3600000),
+    days: Math.floor(diff / 86400000),
+    hours: Math.floor((diff % 86400000) / 3600000),
     minutes: Math.floor((diff % 3600000) / 60000),
     seconds: Math.floor((diff % 60000) / 1000),
     totalMs: diff,

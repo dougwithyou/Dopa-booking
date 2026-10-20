@@ -18,6 +18,7 @@ export function Closer({
     code: string;
     label: string;
     expiresAt: string | null;
+    daysLabel: string;
     hoursLabel: string;
     minutesLabel: string;
     secondsLabel: string;
@@ -43,6 +44,7 @@ export function Closer({
           {ticket.expiresAt && (
             <Countdown
               expiresAt={ticket.expiresAt}
+              daysLabel={ticket.daysLabel}
               hoursLabel={ticket.hoursLabel}
               minutesLabel={ticket.minutesLabel}
               secondsLabel={ticket.secondsLabel}

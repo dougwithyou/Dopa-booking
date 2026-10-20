@@ -55,7 +55,7 @@ const MUSIC_ACCEPT = ['audio/*', ...Object.keys(MUSIC_TYPES).map((ext) => `.${ex
 const AI_COPY_KEYS = [
   'eyebrow_en', 'eyebrow_es', 'headline_en', 'headline_es', 'subheadline_en', 'subheadline_es',
   'cta_primary_en', 'cta_primary_es', 'cta_secondary_en', 'cta_secondary_es',
-  'gallery_heading_en', 'gallery_heading_es', 'about_heading_en', 'about_heading_es',
+  'gallery_eyebrow_en', 'gallery_eyebrow_es', 'gallery_heading_en', 'gallery_heading_es', 'about_heading_en', 'about_heading_es',
   'about_body_en', 'about_body_es', 'closer_heading_en', 'closer_heading_es', 'closer_body_en', 'closer_body_es',
 ] as const satisfies readonly (keyof LandingCopy)[];
 
@@ -73,6 +73,8 @@ interface EditorState {
   cta_primary_es: string;
   cta_secondary_en: string;
   cta_secondary_es: string;
+  gallery_eyebrow_en: string;
+  gallery_eyebrow_es: string;
   gallery_heading_en: string;
   gallery_heading_es: string;
   about_heading_en: string;
@@ -110,6 +112,8 @@ function fromPage(p: LandingPage): EditorState {
     cta_primary_es: p.cta_primary_es ?? '',
     cta_secondary_en: p.cta_secondary_en ?? '',
     cta_secondary_es: p.cta_secondary_es ?? '',
+    gallery_eyebrow_en: p.gallery_eyebrow_en ?? '',
+    gallery_eyebrow_es: p.gallery_eyebrow_es ?? '',
     gallery_heading_en: p.gallery_heading_en ?? '',
     gallery_heading_es: p.gallery_heading_es ?? '',
     about_heading_en: p.about_heading_en ?? '',
@@ -353,6 +357,8 @@ export default function LandingPageEditor({
         cta_primary_es: state.cta_primary_es || null,
         cta_secondary_en: state.cta_secondary_en || null,
         cta_secondary_es: state.cta_secondary_es || null,
+        gallery_eyebrow_en: state.gallery_eyebrow_en || null,
+        gallery_eyebrow_es: state.gallery_eyebrow_es || null,
         gallery_heading_en: state.gallery_heading_en || null,
         gallery_heading_es: state.gallery_heading_es || null,
         about_heading_en: state.about_heading_en || null,
@@ -518,6 +524,13 @@ export default function LandingPageEditor({
           <h2 className="text-sm font-semibold text-gray-900">Gallery</h2>
           <span className="text-xs text-gray-500">{state.gallery.length} / {MAX_GALLERY}</span>
         </div>
+        <PairedRow
+          label="Gallery label (small text above the heading — leave empty for “Latest sessions / Últimas sesiones”)"
+          enValue={state.gallery_eyebrow_en}
+          esValue={state.gallery_eyebrow_es}
+          onEnChange={(v) => set('gallery_eyebrow_en', v)}
+          onEsChange={(v) => set('gallery_eyebrow_es', v)}
+        />
         <PairedRow
           label="Gallery heading"
           enValue={state.gallery_heading_en}
