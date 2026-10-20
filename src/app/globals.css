@@ -114,3 +114,34 @@ body {
 .tpl-christmas .fall-tone {
   filter: saturate(1.08) contrast(1.03);
 }
+
+/* Hero slideshow "film" motion: slow zoom + drift, alternating direction
+   per slide. Duration covers the slide's time on screen plus its fade-out. */
+@keyframes kenburns-in {
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.12) translate3d(-1.5%, -1%, 0);
+  }
+}
+@keyframes kenburns-out {
+  from {
+    transform: scale(1.12) translate3d(1.5%, 1%, 0);
+  }
+  to {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+}
+.kenburns-in {
+  animation: kenburns-in 7.6s ease-out forwards;
+}
+.kenburns-out {
+  animation: kenburns-out 7.6s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kenburns-in,
+  .kenburns-out {
+    animation: none;
+  }
+}

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Photo } from './Photo';
+import { HeroSlideshow } from './HeroSlideshow';
 
 export function Hero({
   eyebrow,
@@ -10,6 +11,7 @@ export function Hero({
   ctaSecondaryHref,
   ctaSecondaryLabel,
   imageUrl,
+  slideshowUrls = [],
   scrollCueLabel,
 }: {
   eyebrow: string | null;
@@ -20,11 +22,17 @@ export function Hero({
   ctaSecondaryHref: string;
   ctaSecondaryLabel: string;
   imageUrl: string | null;
+  /** When 2+ photos are given, the hero cycles through them instead of showing imageUrl alone. */
+  slideshowUrls?: string[];
   scrollCueLabel: string;
 }) {
   return (
     <section className="relative h-[100svh] min-h-[640px] w-full overflow-hidden">
-      <Photo src={imageUrl} alt="" seed={0} className="absolute inset-0 h-full w-full" priority sizes="100vw" />
+      {slideshowUrls.length > 1 ? (
+        <HeroSlideshow urls={slideshowUrls} className="absolute inset-0 h-full w-full" />
+      ) : (
+        <Photo src={imageUrl} alt="" seed={0} className="absolute inset-0 h-full w-full" priority sizes="100vw" />
+      )}
       <div
         className="absolute inset-0"
         style={{

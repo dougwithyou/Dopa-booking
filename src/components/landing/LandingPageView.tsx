@@ -147,6 +147,9 @@ export async function LandingPageView({
         ctaSecondaryHref={`#${GALLERY_ID}`}
         ctaSecondaryLabel={ctaSecondary}
         imageUrl={page.hero_image_url}
+        slideshowUrls={Array.from(
+          new Set([page.hero_image_url, ...photos.map((p) => p.url)].filter((u): u is string => Boolean(u)))
+        )}
         scrollCueLabel={t('hero.scrollCue')}
       />
 
