@@ -1,19 +1,6 @@
 import 'server-only';
 import Anthropic from '@anthropic-ai/sdk';
-
-// Lazy singleton, mirrors getStripe() in src/lib/stripe.ts — constructed on
-// first use so a missing ANTHROPIC_API_KEY surfaces as a runtime error on
-// the one route that needs it, not at build time.
-let cachedClient: Anthropic | null = null;
-
-function getAnthropicClient(): Anthropic {
-  if (!cachedClient) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set');
-    cachedClient = new Anthropic({ apiKey });
-  }
-  return cachedClient;
-}
+import { getAnthropicClient } from '@/lib/anthropic';
 
 const MODEL = 'claude-haiku-4-5-20251001';
 const MAX_OUTPUT_TOKENS = 2048;

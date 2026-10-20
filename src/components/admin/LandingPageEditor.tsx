@@ -18,6 +18,8 @@ import { SECTION_LABELS, resolveSectionOrder } from '@/lib/landing/sections';
 import { DEFAULT_THEME_COLORS, THEME_COLOR_LABELS, THEME_PRESETS } from '@/lib/landing/theme';
 import ImageUploadCrop from './ImageUploadCrop';
 import TemplatePicker from './TemplatePicker';
+import AiCopyCard from './AiCopyCard';
+import type { LandingCopy } from '@/lib/landing/ai';
 import { getTemplate } from '@/lib/landing/templates';
 import { uploadMedia } from './lib/storage';
 import { centsToDollarsInput, dollarsInputToCents } from './lib/format';
@@ -46,6 +48,15 @@ const MUSIC_TYPES: Record<string, string> = {
   ogg: 'audio/ogg',
 };
 const MUSIC_ACCEPT = ['audio/*', ...Object.keys(MUSIC_TYPES).map((ext) => `.${ext}`), 'audio/mpeg', 'audio/mp4'].join(',');
+
+// The text fields the "Fill with AI" card writes; used to warn before it
+// overwrites copy the admin already typed.
+const AI_COPY_KEYS = [
+  'eyebrow_en', 'eyebrow_es', 'headline_en', 'headline_es', 'subheadline_en', 'subheadline_es',
+  'cta_primary_en', 'cta_primary_es', 'cta_secondary_en', 'cta_secondary_es',
+  'gallery_heading_en', 'gallery_heading_es', 'about_heading_en', 'about_heading_es',
+  'about_body_en', 'about_body_es', 'closer_heading_en', 'closer_heading_es', 'closer_body_en', 'closer_body_es',
+] as const satisfies readonly (keyof LandingCopy)[];
 
 interface EditorState {
   slug: string;
@@ -207,6 +218,11 @@ export default function LandingPageEditor({
 
   function applyThemePreset(colors: LandingPageTheme) {
     setState((s) => ({ ...s, theme: { ...colors } }));
+  }
+
+  function applyAiCopy(copy: LandingCopy) {
+    setSuccess(false);
+    setState((s) => ({ ...s, ...copy }));
   }
 
   function pickTemplate(value: string) {
@@ -413,6 +429,12 @@ export default function LandingPageEditor({
     <div className="max-w-4xl space-y-6">
       {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {success && <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">Saved.</p>}
+
+      <AiCopyCard
+        template={state.template}
+        hasExistingCopy={AI_COPY_KEYS.some((key) => state[key].trim() !== '')}
+        onApply={applyAiCopy}
+      />
 
       <div className={`${cardCls} space-y-4`}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
