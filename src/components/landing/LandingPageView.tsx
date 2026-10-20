@@ -10,6 +10,7 @@ import { Snowfall } from './Snowfall';
 import { BackgroundMusic } from './BackgroundMusic';
 import { renderDuo } from './Duo';
 import { TopMark } from './TopMark';
+import { PromoBanner, PROMO_BANNER_HEIGHT } from './PromoBanner';
 import { LocaleSwitch } from './LocaleSwitch';
 import { Hero } from './Hero';
 import { GalleryLightbox } from './GalleryLightbox';
@@ -139,7 +140,23 @@ export async function LandingPageView({
         <BackgroundMusic src={page.background_music_url} playLabel={t('music.play')} muteLabel={t('music.mute')} />
       )}
       <MetaPixel pixelId={metaPixelId} />
-      <TopMark studioName={studioName} region={t('topmark.region')} right={<LocaleSwitch locale={locale} />} />
+      {ticket && (
+        <PromoBanner
+          offLabel={t('banner.off', { value: formatDiscountValue(discount!) })}
+          codeLabel={t('banner.code')}
+          code={ticket.code}
+          endsInLabel={t('banner.endsIn')}
+          expiresAt={ticket.expiresAt}
+          ctaHref={bookHref}
+          ctaLabel={t('banner.cta')}
+        />
+      )}
+      <TopMark
+        studioName={studioName}
+        region={t('topmark.region')}
+        right={<LocaleSwitch locale={locale} />}
+        offsetTop={ticket ? PROMO_BANNER_HEIGHT : 0}
+      />
 
       <Hero
         eyebrow={eyebrow}

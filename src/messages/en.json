@@ -44,6 +44,12 @@
     "music": {
       "play": "Play music",
       "mute": "Mute music"
+    },
+    "banner": {
+      "off": "{value} off",
+      "code": "Code",
+      "endsIn": "Ends in",
+      "cta": "Book now"
     }
   },
   "booking": {

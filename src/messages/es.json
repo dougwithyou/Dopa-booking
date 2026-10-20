@@ -44,6 +44,12 @@
     "music": {
       "play": "Activar música",
       "mute": "Silenciar música"
+    },
+    "banner": {
+      "off": "{value} de descuento",
+      "code": "Código",
+      "endsIn": "Termina en",
+      "cta": "Reservar ahora"
     }
   },
   "booking": {
