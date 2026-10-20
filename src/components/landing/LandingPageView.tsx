@@ -137,7 +137,12 @@ export async function LandingPageView({
     <div style={themeToStyle(page.theme)} className={`tpl-${page.template}`}>
       {getTemplate(page.template)?.decoration === 'snow' && <Snowfall />}
       {page.background_music_url && (
-        <BackgroundMusic src={page.background_music_url} playLabel={t('music.play')} muteLabel={t('music.mute')} />
+        <BackgroundMusic
+          src={page.background_music_url}
+          playLabel={t('music.play')}
+          muteLabel={t('music.mute')}
+          hintLabel={t('music.hint')}
+        />
       )}
       <MetaPixel pixelId={metaPixelId} />
       {ticket && (

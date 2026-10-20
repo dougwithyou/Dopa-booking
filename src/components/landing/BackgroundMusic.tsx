@@ -27,28 +27,46 @@ function writeMuted(muted: boolean) {
  * starts on the visitor's first tap/click/key anywhere on the page — unless
  * they muted it on a previous visit.
  */
-export function BackgroundMusic({ src, playLabel, muteLabel }: { src: string; playLabel: string; muteLabel: string }) {
+export function BackgroundMusic({
+  src,
+  playLabel,
+  muteLabel,
+  hintLabel,
+}: {
+  src: string;
+  playLabel: string;
+  muteLabel: string;
+  hintLabel: string;
+}) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [playing, setPlaying] = useState(false);
+  // Shown while the browser is still blocking autoplay (and the visitor
+  // hasn't muted on purpose), nudging them to tap.
+  const [waiting, setWaiting] = useState(false);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     audio.volume = 0.35;
     if (readMuted()) return;
+    setWaiting(true);
 
     const start = (e?: Event) => {
       // The button handles its own clicks; don't start-then-toggle-off.
       if (e && buttonRef.current?.contains(e.target as Node)) return;
       audio.play().then(() => {
         setPlaying(true);
+        setWaiting(false);
         detach();
       }).catch(() => {
         // Still blocked; wait for the next interaction.
       });
     };
-    const events = ['pointerdown', 'keydown', 'touchstart'] as const;
+    // Browsers only allow sound after a "user activation" — a tap, click or
+    // key press (a scroll swipe alone doesn't count). Listen for all of them
+    // so the music starts on the visitor's very first one.
+    const events = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'] as const;
     const detach = () => events.forEach((ev) => window.removeEventListener(ev, start));
     events.forEach((ev) => window.addEventListener(ev, start, { passive: true }));
     start();
@@ -58,6 +76,7 @@ export function BackgroundMusic({ src, playLabel, muteLabel }: { src: string; pl
   function toggle() {
     const audio = audioRef.current;
     if (!audio) return;
+    setWaiting(false);
     if (playing) {
       audio.pause();
       setPlaying(false);
@@ -70,7 +89,13 @@ export function BackgroundMusic({ src, playLabel, muteLabel }: { src: string; pl
 
   return (
     <>
-      <audio ref={audioRef} src={src} loop preload="none" />
+      {/* preload so the first allowed play() starts instantly */}
+      <audio ref={audioRef} src={src} loop preload="auto" />
+      {waiting && !playing && (
+        <span className="pointer-events-none fixed bottom-[30px] right-[76px] z-[60] animate-pulse whitespace-nowrap bg-wine/90 px-3 py-1.5 font-body text-[10px] font-semibold uppercase tracking-[0.14em] text-parchment shadow">
+          {hintLabel}
+        </span>
+      )}
       <button
         ref={buttonRef}
         type="button"

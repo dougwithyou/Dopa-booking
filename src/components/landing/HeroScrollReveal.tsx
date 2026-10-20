@@ -12,7 +12,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
  *
  * Reduced-motion visitors get no pin and fully visible text.
  */
-export function HeroScrollReveal({ children, pinFraction = 0.7 }: { children: ReactNode; pinFraction?: number }) {
+export function HeroScrollReveal({ children, pinFraction = 0.35 }: { children: ReactNode; pinFraction?: number }) {
   const outerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

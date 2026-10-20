@@ -43,7 +43,8 @@
     },
     "music": {
       "play": "Activar música",
-      "mute": "Silenciar música"
+      "mute": "Silenciar música",
+      "hint": "Toca para activar la música"
     },
     "banner": {
       "off": "{value} de descuento",
