@@ -7,6 +7,7 @@ import type { AppLocale } from '@/i18n/routing';
 import type { Product } from '@/types/db';
 import { formatCents } from '@/lib/formatMoney';
 import { Photo } from '@/components/landing/Photo';
+import { productCopy } from '@/lib/products/copy';
 
 export function UpsellGrid({
   locale,
@@ -67,18 +68,19 @@ export function UpsellGrid({
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((product, i) => {
             const qty = quantities[product.id] ?? 0;
+            const copy = productCopy(product, locale);
             return (
               <div key={product.id} className="border border-ink/10 bg-white/30">
                 <Photo
                   src={product.images?.[0]?.url ?? null}
-                  alt={product.name}
+                  alt={copy.name}
                   seed={i + 5}
                   className="aspect-[4/3] w-full"
                 />
                 <div className="p-5">
-                  <div className="font-display text-base font-extrabold text-ink">{product.name}</div>
-                  {product.description && (
-                    <p className="mt-1 font-body text-sm text-ink/60">{product.description}</p>
+                  <div className="font-display text-base font-extrabold text-ink">{copy.name}</div>
+                  {copy.description && (
+                    <p className="mt-1 font-body text-sm text-ink/60">{copy.description}</p>
                   )}
                   <div className="mt-3 font-body text-sm font-semibold text-clay">
                     {formatCents(product.price_cents, product.currency, locale)}

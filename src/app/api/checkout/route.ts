@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type Stripe from 'stripe';
 import { connectedAccount, getStripe, siteUrl } from '@/lib/stripe';
 import type { Booking, Client, DiscountCode, LandingPage, Locale, Product, Studio, UpsellOrder } from '@/types/db';
+import { productCopy } from '@/lib/products/copy';
 import {
   adminDb,
   applyDiscount,
@@ -276,8 +277,8 @@ export async function POST(request: NextRequest) {
             currency,
             unit_amount: line.product.price_cents,
             product_data: {
-              name: truncate(line.product.name, 250),
-              ...(line.product.description ? { description: truncate(line.product.description, 250) } : {}),
+              name: truncate(productCopy(line.product, locale).name, 250),
+              ...descriptionParam(productCopy(line.product, locale).description),
             },
           },
         })),
@@ -458,4 +459,8 @@ async function resolveExtras(
 
 function truncate(value: string, max: number): string {
   return value.length > max ? `${value.slice(0, max - 3)}...` : value;
+}
+
+function descriptionParam(description: string | null): { description?: string } {
+  return description ? { description: truncate(description, 250) } : {};
 }

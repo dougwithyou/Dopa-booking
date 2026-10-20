@@ -13,17 +13,29 @@ import { badgeCls, btnDanger, btnGhost, btnPrimary, btnSecondary, inputCls, labe
 interface ProductForm {
   name: string;
   description: string;
+  name_es: string;
+  description_es: string;
   price: string;
   is_active: boolean;
   images: ProductImage[];
 }
 
-const emptyForm: ProductForm = { name: '', description: '', price: '', is_active: true, images: [] };
+const emptyForm: ProductForm = {
+  name: '',
+  description: '',
+  name_es: '',
+  description_es: '',
+  price: '',
+  is_active: true,
+  images: [],
+};
 
 function fromProduct(p: Product): ProductForm {
   return {
     name: p.name,
     description: p.description ?? '',
+    name_es: p.name_es ?? '',
+    description_es: p.description_es ?? '',
     price: centsToDollarsInput(p.price_cents),
     is_active: p.is_active,
     images: p.images ?? [],
@@ -75,6 +87,8 @@ export default function ProductsManager({ studioId, initialProducts }: { studioI
         studio_id: studioId,
         name: createForm.name.trim(),
         description: createForm.description.trim() || null,
+        name_es: createForm.name_es.trim() || null,
+        description_es: createForm.description_es.trim() || null,
         price_cents: dollarsInputToCents(createForm.price || '0'),
         currency: 'usd',
         images: createForm.images,
@@ -107,6 +121,8 @@ export default function ProductsManager({ studioId, initialProducts }: { studioI
       .update({
         name: editForm.name.trim(),
         description: editForm.description.trim() || null,
+        name_es: editForm.name_es.trim() || null,
+        description_es: editForm.description_es.trim() || null,
         price_cents: dollarsInputToCents(editForm.price || '0'),
         images: editForm.images,
         is_active: editForm.is_active,
@@ -155,7 +171,7 @@ export default function ProductsManager({ studioId, initialProducts }: { studioI
       <div className="space-y-3">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label className={labelCls}>Name</label>
+            <label className={labelCls}>Name (English)</label>
             <input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div>
@@ -171,13 +187,34 @@ export default function ProductsManager({ studioId, initialProducts }: { studioI
           </div>
         </div>
         <div>
-          <label className={labelCls}>Description</label>
+          <label className={labelCls}>Description (English)</label>
           <textarea
             className={textareaCls}
             rows={2}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className={labelCls}>Name (Spanish)</label>
+            <input
+              className={inputCls}
+              value={form.name_es}
+              placeholder={form.name || 'Falls back to the English name'}
+              onChange={(e) => setForm({ ...form, name_es: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Description (Spanish)</label>
+            <textarea
+              className={textareaCls}
+              rows={2}
+              value={form.description_es}
+              placeholder="Falls back to the English description"
+              onChange={(e) => setForm({ ...form, description_es: e.target.value })}
+            />
+          </div>
         </div>
         <div>
           <label className={labelCls}>Images</label>

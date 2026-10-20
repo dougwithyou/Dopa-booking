@@ -434,12 +434,13 @@ export async function sendBookingEmailsSafely(ctx: BookingEmailContext): Promise
  */
 async function fetchPaidExtras(
   db: AdminDb,
-  bookingId: string
+  bookingId: string,
+  locale: Locale
 ): Promise<BookingEmailContext['extras']> {
   try {
     const { data, error } = await db
       .from('upsell_orders')
-      .select('quantity, amount_cents, currency, products(name)')
+      .select('quantity, amount_cents, currency, products(name, name_es)')
       .eq('booking_id', bookingId)
       .eq('status', 'paid')
       .order('created_at', { ascending: true });
@@ -448,9 +449,9 @@ async function fetchPaidExtras(
       quantity: number;
       amount_cents: number;
       currency: string;
-      products: { name: string } | null;
+      products: { name: string; name_es: string | null } | null;
     }[] | null) ?? []).map((row) => ({
-      name: row.products?.name ?? 'Extra',
+      name: (locale === 'es' && row.products?.name_es?.trim()) || row.products?.name || 'Extra',
       quantity: row.quantity,
       amountCents: row.amount_cents,
       currency: row.currency,
@@ -549,7 +550,7 @@ export async function confirmBooking(
       location,
       slot,
       locale,
-      extras: await fetchPaidExtras(db, confirmed.id),
+      extras: await fetchPaidExtras(db, confirmed.id, locale),
     });
   } else {
     console.error('[payments] skipping booking emails — missing client or landing page', {

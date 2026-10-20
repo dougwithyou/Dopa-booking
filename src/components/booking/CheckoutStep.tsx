@@ -7,6 +7,7 @@ import { pad2, useCountdown } from '@/lib/countdown';
 import { formatCents } from '@/lib/formatMoney';
 import type { HoldResponse } from '@/lib/booking/types';
 import { Photo } from '@/components/landing/Photo';
+import { productCopy } from '@/lib/products/copy';
 import type { CheckoutOffer } from './BookingFlow';
 
 const MAX_QUANTITY = 20;
@@ -117,6 +118,7 @@ export function CheckoutStep({
               <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {offer.products.map((product, i) => {
                   const qty = quantities[product.id] ?? 0;
+                  const copy = productCopy(product, locale);
                   return (
                     <div
                       key={product.id}
@@ -126,14 +128,14 @@ export function CheckoutStep({
                     >
                       <Photo
                         src={product.images?.[0]?.url ?? null}
-                        alt={product.name}
+                        alt={copy.name}
                         seed={i + 5}
                         className="aspect-[4/3] w-full"
                       />
                       <div className="flex flex-1 flex-col p-4">
-                        <div className="font-display text-base font-extrabold text-ink">{product.name}</div>
-                        {product.description && (
-                          <p className="mt-1 font-body text-sm text-ink/60">{product.description}</p>
+                        <div className="font-display text-base font-extrabold text-ink">{copy.name}</div>
+                        {copy.description && (
+                          <p className="mt-1 font-body text-sm text-ink/60">{copy.description}</p>
                         )}
                         <div className="mt-auto flex items-center justify-between gap-3 pt-4">
                           <span className="font-body text-sm font-semibold text-clay">{money(product.price_cents)}</span>
@@ -199,7 +201,7 @@ export function CheckoutStep({
               {cart.map(({ product, quantity }) => (
                 <li key={product.id} className="flex justify-between gap-4">
                   <span>
-                    {product.name}
+                    {productCopy(product, locale).name}
                     {quantity > 1 && <span className="text-ink/50"> × {quantity}</span>}
                   </span>
                   <span className="tabular-nums">{money(product.price_cents * quantity)}</span>

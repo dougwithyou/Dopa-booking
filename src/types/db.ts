@@ -175,6 +175,8 @@ export type Product = {
   studio_id: string;
   name: string;
   description: string | null;
+  name_es: string | null;
+  description_es: string | null;
   price_cents: number;
   currency: string;
   images: ProductImage[];
