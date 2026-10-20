@@ -18,6 +18,7 @@ import { SECTION_LABELS, resolveSectionOrder } from '@/lib/landing/sections';
 import { DEFAULT_THEME_COLORS, THEME_COLOR_LABELS, THEME_PRESETS } from '@/lib/landing/theme';
 import ImageUploadCrop from './ImageUploadCrop';
 import TemplatePicker from './TemplatePicker';
+import { formatCents } from '@/lib/formatMoney';
 import AiCopyCard from './AiCopyCard';
 import type { LandingCopy } from '@/lib/landing/ai';
 import { getTemplate } from '@/lib/landing/templates';
@@ -772,17 +773,45 @@ export default function LandingPageEditor({
         </div>
       </div>
 
-      <div className={cardCls}>
-        <h2 className="mb-3 text-sm font-semibold text-gray-900">Upsell products</h2>
+      <div className={`${cardCls} space-y-3`}>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold text-gray-900">Upsell products (extras)</h2>
+          <span className="text-xs text-gray-500">
+            {productIds.filter((id) => products.some((p) => p.id === id && p.is_active)).length} shown at checkout
+          </span>
+        </div>
+        <p className="text-xs text-gray-500">
+          Tick every extra you want clients to see as cards on the checkout step of this page. If none are ticked,
+          all active products are shown. Inactive products never show — activate them under Products.
+        </p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {products.map((p) => (
-            <label key={p.id} className="flex items-center gap-2 text-sm text-gray-700">
-              <input type="checkbox" checked={productIds.includes(p.id)} onChange={() => toggleProduct(p.id)} />
-              {p.name}
-              {!p.is_active && <span className="text-xs text-gray-400">(inactive)</span>}
-            </label>
-          ))}
-          {products.length === 0 && <p className="text-sm text-gray-500">No products yet.</p>}
+          {products.map((p) => {
+            const selected = productIds.includes(p.id);
+            return (
+              <label
+                key={p.id}
+                className={`flex cursor-pointer items-center gap-3 rounded-md border p-2 text-sm transition ${
+                  selected ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-400'
+                } ${p.is_active ? '' : 'opacity-60'}`}
+              >
+                <input type="checkbox" checked={selected} onChange={() => toggleProduct(p.id)} />
+                {p.images?.[0]?.url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.images[0].url} alt="" className="h-10 w-10 rounded object-cover" />
+                ) : (
+                  <span className="h-10 w-10 rounded bg-gray-100" />
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium text-gray-800">{p.name}</span>
+                  <span className="block text-xs text-gray-500">
+                    {formatCents(p.price_cents, p.currency, 'en')}
+                    {!p.is_active && ' · inactive (won’t show)'}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+          {products.length === 0 && <p className="text-sm text-gray-500">No products yet — create them under Products.</p>}
         </div>
       </div>
 
