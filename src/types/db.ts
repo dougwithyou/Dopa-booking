@@ -44,11 +44,17 @@ export type Location = {
   updated_at: string;
 };
 
+/** Point of a photo (percent of width / height, 0-100) to keep in frame when it's cropped to fit. */
+export type FocalPoint = { x: number; y: number };
+
 export type GalleryPhoto = {
   url: string;
   tag_en: string;
   tag_es: string;
   order: number;
+  /** Focal point in percent; missing on photos uploaded before it existed (= center). */
+  focal_x?: number;
+  focal_y?: number;
 };
 
 export type Testimonial = {
@@ -98,6 +104,8 @@ export type LandingPage = {
   closer_body_en: string | null; closer_body_es: string | null;
 
   hero_image_url: string | null;
+  hero_focal_x: number;
+  hero_focal_y: number;
   about_image_url: string | null;
   background_music_url: string | null;
   gallery: GalleryPhoto[];

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowDown, ArrowUp, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Crosshair, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type {
   DiscountCode,
@@ -17,6 +17,8 @@ import type {
 import { SECTION_LABELS, resolveSectionOrder } from '@/lib/landing/sections';
 import { DEFAULT_THEME_COLORS, THEME_COLOR_LABELS, THEME_PRESETS } from '@/lib/landing/theme';
 import ImageUploadCrop from './ImageUploadCrop';
+import ImageUploadFull from './ImageUploadFull';
+import FocalPointPicker from './FocalPointPicker';
 import TemplatePicker from './TemplatePicker';
 import { formatCents } from '@/lib/formatMoney';
 import AiCopyCard from './AiCopyCard';
@@ -86,6 +88,8 @@ interface EditorState {
   closer_body_en: string;
   closer_body_es: string;
   hero_image_url: string | null;
+  hero_focal_x: number;
+  hero_focal_y: number;
   about_image_url: string | null;
   background_music_url: string | null;
   gallery: GalleryPhoto[];
@@ -128,6 +132,8 @@ function fromPage(p: LandingPage): EditorState {
     closer_body_en: p.closer_body_en ?? '',
     closer_body_es: p.closer_body_es ?? '',
     hero_image_url: p.hero_image_url,
+    hero_focal_x: Number(p.hero_focal_x ?? 50),
+    hero_focal_y: Number(p.hero_focal_y ?? 50),
     about_image_url: p.about_image_url,
     background_music_url: p.background_music_url ?? null,
     gallery: [...(p.gallery ?? [])].sort((a, b) => a.order - b.order),
@@ -207,6 +213,8 @@ export default function LandingPageEditor({
   const [uploadingAbout, setUploadingAbout] = useState(false);
   const [uploadingMusic, setUploadingMusic] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
+  // Which photo's focal-point picker is open: the hero, or a gallery index.
+  const [focalTarget, setFocalTarget] = useState<'hero' | number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const router = useRouter();
@@ -265,7 +273,8 @@ export default function LandingPageEditor({
     try {
       const supabase = createClient();
       const url = await uploadMedia(supabase, 'hero', blob);
-      set('hero_image_url', url);
+      setState((s) => ({ ...s, hero_image_url: url, hero_focal_x: 50, hero_focal_y: 50 }));
+      setFocalTarget('hero');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Hero upload failed.');
     } finally {
@@ -318,8 +327,9 @@ export default function LandingPageEditor({
     try {
       const supabase = createClient();
       const url = await uploadMedia(supabase, 'gallery', blob);
-      const newItem: GalleryPhoto = { url, tag_en: '', tag_es: '', order: state.gallery.length };
+      const newItem: GalleryPhoto = { url, tag_en: '', tag_es: '', order: state.gallery.length, focal_x: 50, focal_y: 50 };
       set('gallery', [...state.gallery, newItem]);
+      setFocalTarget(state.gallery.length);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Gallery upload failed.');
     } finally {
@@ -376,6 +386,8 @@ export default function LandingPageEditor({
         closer_body_en: state.closer_body_en || null,
         closer_body_es: state.closer_body_es || null,
         hero_image_url: state.hero_image_url,
+        hero_focal_x: state.hero_focal_x,
+        hero_focal_y: state.hero_focal_y,
         about_image_url: state.about_image_url,
         background_music_url: state.background_music_url,
         gallery: state.gallery,
@@ -484,15 +496,29 @@ export default function LandingPageEditor({
         <div className="flex items-start gap-4">
           {state.hero_image_url && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={state.hero_image_url} alt="" className="h-24 w-40 rounded-md object-cover" />
+            <img
+              src={state.hero_image_url}
+              alt=""
+              className="h-24 w-40 rounded-md object-cover"
+              style={{ objectPosition: `${state.hero_focal_x}% ${state.hero_focal_y}%` }}
+            />
           )}
-          <ImageUploadCrop
-            aspect={16 / 9}
-            label={state.hero_image_url ? 'Replace hero photo' : 'Upload hero photo'}
-            uploading={uploadingHero}
-            onCropped={handleHeroUpload}
-          />
+          <div className="flex flex-col gap-2">
+            <ImageUploadFull
+              label={state.hero_image_url ? 'Replace hero photo' : 'Upload hero photo'}
+              uploading={uploadingHero}
+              onUpload={handleHeroUpload}
+            />
+            {state.hero_image_url && (
+              <button type="button" className={btnSecondary} onClick={() => setFocalTarget('hero')}>
+                <Crosshair className="h-4 w-4" /> Set center
+              </button>
+            )}
+          </div>
         </div>
+        <p className="text-xs text-gray-500">
+          Photos are uploaded whole (not cropped). Use &ldquo;Set center&rdquo; to mark what must stay in frame.
+        </p>
 
         <PairedRow
           label="Eyebrow"
@@ -555,7 +581,21 @@ export default function LandingPageEditor({
           {state.gallery.map((g, idx) => (
             <div key={g.url} className="flex flex-col gap-3 rounded-md border border-gray-200 p-3 sm:flex-row sm:items-start">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={g.url} alt="" className="h-20 w-20 shrink-0 rounded-md object-cover" />
+              <div className="flex shrink-0 flex-col items-start gap-1.5">
+                <img
+                  src={g.url}
+                  alt=""
+                  className="h-20 w-20 rounded-md object-cover"
+                  style={{ objectPosition: `${g.focal_x ?? 50}% ${g.focal_y ?? 50}%` }}
+                />
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900"
+                  onClick={() => setFocalTarget(idx)}
+                >
+                  <Crosshair className="h-3.5 w-3.5" /> Set center
+                </button>
+              </div>
               <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
                 <input
                   className={inputCls}
@@ -578,7 +618,7 @@ export default function LandingPageEditor({
         </div>
 
         {state.gallery.length < MAX_GALLERY && (
-          <ImageUploadCrop aspect={1} label="Add gallery photo" uploading={uploadingGallery} onCropped={handleGalleryUpload} />
+          <ImageUploadFull label="Add gallery photo" uploading={uploadingGallery} onUpload={handleGalleryUpload} />
         )}
       </div>
 
@@ -884,6 +924,30 @@ export default function LandingPageEditor({
           {products.length === 0 && <p className="text-sm text-gray-500">No products yet — create them under Products.</p>}
         </div>
       </div>
+
+      {focalTarget !== null &&
+        (() => {
+          const isHero = focalTarget === 'hero';
+          const item = isHero ? null : state.gallery[focalTarget];
+          const imageUrl = isHero ? state.hero_image_url : item?.url;
+          if (!imageUrl) return null;
+          return (
+            <FocalPointPicker
+              imageUrl={imageUrl}
+              value={
+                isHero
+                  ? { x: state.hero_focal_x, y: state.hero_focal_y }
+                  : { x: item?.focal_x ?? 50, y: item?.focal_y ?? 50 }
+              }
+              onSave={(pt) =>
+                isHero
+                  ? setState((s) => ({ ...s, hero_focal_x: pt.x, hero_focal_y: pt.y }))
+                  : updateGalleryItem(focalTarget, { focal_x: pt.x, focal_y: pt.y })
+              }
+              onClose={() => setFocalTarget(null)}
+            />
+          );
+        })()}
 
       <div className="flex gap-2 pb-8">
         <button type="button" className={btnPrimary} disabled={saving} onClick={handleSave}>

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Photo } from './Photo';
-import { HeroSlideshow } from './HeroSlideshow';
+import { HeroSlideshow, type HeroSlide } from './HeroSlideshow';
+import type { FocalPoint } from '@/types/db';
 import { HeroScrollReveal } from './HeroScrollReveal';
 import { HeroDuoContrast } from './HeroDuoContrast';
 
@@ -13,7 +14,8 @@ export function Hero({
   ctaSecondaryHref,
   ctaSecondaryLabel,
   imageUrl,
-  slideshowUrls = [],
+  imageFocal,
+  slides = [],
   scrollCueLabel,
 }: {
   eyebrow: string | null;
@@ -24,18 +26,27 @@ export function Hero({
   ctaSecondaryHref: string;
   ctaSecondaryLabel: string;
   imageUrl: string | null;
+  imageFocal?: FocalPoint | null;
   /** When 2+ photos are given, the hero cycles through them instead of showing imageUrl alone. */
-  slideshowUrls?: string[];
+  slides?: HeroSlide[];
   scrollCueLabel: string;
 }) {
   return (
     <HeroScrollReveal>
     <section className="relative h-full w-full overflow-hidden">
       <HeroDuoContrast />
-      {slideshowUrls.length > 1 ? (
-        <HeroSlideshow urls={slideshowUrls} className="absolute inset-0 h-full w-full" />
+      {slides.length > 1 ? (
+        <HeroSlideshow slides={slides} className="absolute inset-0 h-full w-full" />
       ) : (
-        <Photo src={imageUrl} alt="" seed={0} className="absolute inset-0 h-full w-full" priority sizes="100vw" />
+        <Photo
+          src={imageUrl}
+          alt=""
+          seed={0}
+          focal={imageFocal}
+          className="absolute inset-0 h-full w-full"
+          priority
+          sizes="100vw"
+        />
       )}
       <div
         className="absolute inset-0"

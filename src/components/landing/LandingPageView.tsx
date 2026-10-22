@@ -13,6 +13,7 @@ import { TopMark } from './TopMark';
 import { PromoBanner, PROMO_BANNER_HEIGHT } from './PromoBanner';
 import { LocaleSwitch } from './LocaleSwitch';
 import { Hero } from './Hero';
+import type { HeroSlide } from './HeroSlideshow';
 import { GalleryLightbox } from './GalleryLightbox';
 import { Testimonials } from './Testimonials';
 import { About } from './About';
@@ -70,7 +71,21 @@ export async function LandingPageView({
 
   const photos = [...page.gallery]
     .sort((a, b) => a.order - b.order)
-    .map((g) => ({ url: g.url || null, tag: pickText(locale, g.tag_en, g.tag_es) }));
+    .map((g) => ({
+      url: g.url || null,
+      tag: pickText(locale, g.tag_en, g.tag_es),
+      focal: g.focal_x != null && g.focal_y != null ? { x: g.focal_x, y: g.focal_y } : null,
+    }));
+  const heroFocal = { x: Number(page.hero_focal_x ?? 50), y: Number(page.hero_focal_y ?? 50) };
+
+  // Hero slideshow: the hero photo first, then the gallery (deduped by URL).
+  const heroSlides: HeroSlide[] = [];
+  for (const slide of [
+    ...(page.hero_image_url ? [{ url: page.hero_image_url, focal: heroFocal }] : []),
+    ...photos.flatMap((p) => (p.url ? [{ url: p.url, focal: p.focal }] : [])),
+  ]) {
+    if (!heroSlides.some((s) => s.url === slide.url)) heroSlides.push(slide);
+  }
 
   const testimonials = [...page.testimonials]
     .sort((a, b) => a.order - b.order)
@@ -189,9 +204,8 @@ export async function LandingPageView({
         ctaSecondaryHref={`#${GALLERY_ID}`}
         ctaSecondaryLabel={ctaSecondary}
         imageUrl={page.hero_image_url}
-        slideshowUrls={Array.from(
-          new Set([page.hero_image_url, ...photos.map((p) => p.url)].filter((u): u is string => Boolean(u)))
-        )}
+        imageFocal={heroFocal}
+        slides={heroSlides}
         scrollCueLabel={t('hero.scrollCue')}
       />
 

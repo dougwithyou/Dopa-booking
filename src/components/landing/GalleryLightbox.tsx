@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Photo } from './Photo';
+import type { FocalPoint } from '@/types/db';
 import { Reveal } from './Reveal';
 
 export interface GalleryPhotoItem {
   url: string | null;
   tag: string;
+  focal?: FocalPoint | null;
 }
 
 export function GalleryLightbox({
@@ -95,6 +97,7 @@ export function GalleryLightbox({
                 src={photo.url}
                 alt={photo.tag}
                 seed={i + 1}
+                focal={photo.focal}
                 className="h-full w-full transition-transform duration-[600ms] ease-[cubic-bezier(.16,1,.3,1)] group-hover:scale-105"
               />
               <span
@@ -169,7 +172,13 @@ export function GalleryLightbox({
                 : undefined
             }
           >
-            <Photo src={activePhoto.url} alt={activePhoto.tag} seed={(openIndex ?? 0) + 1} className="h-full w-full" />
+            <Photo
+              src={activePhoto.url}
+              alt={activePhoto.tag}
+              seed={(openIndex ?? 0) + 1}
+              focal={activePhoto.focal}
+              className="h-full w-full"
+            />
             {activePhoto.tag && (
               <span className="absolute -bottom-[34px] left-0 font-body text-[11px] uppercase tracking-[0.16em] text-parchment">
                 {activePhoto.tag}
