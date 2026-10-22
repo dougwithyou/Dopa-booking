@@ -48,6 +48,9 @@ supabase/migrations/      SQL migrations (schema, RLS policies, storage bucket)
    values ('<the new user's UUID>', (select id from studios limit 1), 'owner');
    ```
 4. Copy the project URL and keys into `.env.local` (see below).
+5. Authentication → URL Configuration: set **Site URL** to the production
+   domain and add `<site>/admin/auth/confirm` to **Redirect URLs** — the
+   admin's "Forgot your password?" email links back there.
 
 ### 2. Environment variables
 
