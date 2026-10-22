@@ -19,8 +19,6 @@ export function Closer({
     label: string;
     expiresAt: string | null;
     useCodeLabel: string;
-    untilLabel: string;
-    locale: string;
     hoursLabel: string;
     minutesLabel: string;
     secondsLabel: string;
@@ -45,12 +43,9 @@ export function Closer({
           </div>
           <div className="mt-1 font-display text-[30px] font-black tracking-[0.02em] text-wine">{ticket.code}</div>
           <div className="mt-1.5 font-body text-[10px] uppercase tracking-[0.18em] text-moss">{ticket.label}</div>
-          <div className="my-5 border-t border-dashed border-[var(--line)]" />
           {ticket.expiresAt && (
             <Countdown
               expiresAt={ticket.expiresAt}
-              locale={ticket.locale}
-              untilLabel={ticket.untilLabel}
               hoursLabel={ticket.hoursLabel}
               minutesLabel={ticket.minutesLabel}
               secondsLabel={ticket.secondsLabel}

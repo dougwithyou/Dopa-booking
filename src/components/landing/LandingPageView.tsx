@@ -98,8 +98,6 @@ export async function LandingPageView({
           label: t('closer.ticketLabel', { value: formatDiscountValue(discount) }),
           expiresAt: discount.expires_at,
           useCodeLabel: t('closer.useCode'),
-          untilLabel: t('closer.until'),
-          locale,
           hoursLabel: t('closer.hours'),
           minutesLabel: t('closer.minutes'),
           secondsLabel: t('closer.seconds'),
@@ -181,8 +179,6 @@ export async function LandingPageView({
           codeLabel={t('banner.code')}
           code={ticket.code}
           endsInLabel={t('banner.endsIn')}
-          untilLabel={t('banner.until')}
-          locale={locale}
           expiresAt={ticket.expiresAt}
           ctaHref={bookHref}
           ctaLabel={t('banner.cta')}

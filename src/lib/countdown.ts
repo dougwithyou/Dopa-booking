@@ -56,20 +56,3 @@ export function pad2(n: number): string {
 }
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
-
-// Discount codes expire on the studio's local calendar (DMV), not the
-// visitor's — same assumption as src/lib/email/format.ts.
-const STUDIO_TIMEZONE = 'America/New_York';
-
-/** Short expiry date for "until …" copy, e.g. "15-Nov" (both locales). */
-export function formatUntilDate(iso: string, locale: string): string {
-  const parts = new Intl.DateTimeFormat(locale === 'es' ? 'es-US' : 'en-US', {
-    day: 'numeric',
-    month: 'short',
-    timeZone: STUDIO_TIMEZONE,
-  }).formatToParts(new Date(iso));
-  const day = parts.find((p) => p.type === 'day')?.value ?? '';
-  // Always three letters (es-US gives "sept." for September).
-  const month = (parts.find((p) => p.type === 'month')?.value ?? '').replace('.', '').slice(0, 3);
-  return `${day}-${month.charAt(0).toUpperCase()}${month.slice(1)}`;
-}

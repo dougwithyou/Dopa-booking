@@ -36,8 +36,7 @@
       "minutes": "Min",
       "seconds": "Seg",
       "cta": "Reservar mi fecha ahora",
-      "useCode": "Usa el código",
-      "until": "Hasta"
+      "useCode": "Usa el código"
     },
     "footer": {
       "tagline": "hidopastudio.com · @hidopastudio · Washington DC / MD / VA"
@@ -51,8 +50,7 @@
       "off": "{value} de descuento",
       "code": "Usa el código",
       "endsIn": "Termina en",
-      "cta": "Reservar ahora",
-      "until": "Hasta"
+      "cta": "Reservar ahora"
     },
     "extras": {
       "eyebrow": "Extras",
