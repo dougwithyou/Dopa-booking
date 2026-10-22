@@ -5,8 +5,25 @@ import { badgeCls, btnPrimary, cardCls } from './lib/ui';
 // The OAuth flow itself (/api/stripe/connect/start, /api/stripe/connect/callback)
 // is owned by the payments-integrator agent — this card just links to it and
 // reflects the resulting studios.stripe_* columns.
-export default function StripeConnectCard({ studio }: { studio: Studio }) {
+export default function StripeConnectCard({ studio, directCharges }: { studio: Studio; directCharges: boolean }) {
   const connected = !!studio.stripe_account_id && studio.stripe_charges_enabled;
+
+  if (directCharges) {
+    return (
+      <div className={cardCls}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">Stripe payments</h2>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Direct mode: bookings, extras and refunds go straight through the platform&apos;s own Stripe account
+              (the one configured in Vercel). No Connect link is needed.
+            </p>
+          </div>
+          <span className={badgeCls('green')}>Direct ✓</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cardCls}>

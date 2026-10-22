@@ -105,6 +105,18 @@ the first public landing page.
 3. Update the Stripe Connect redirect URI and webhook endpoint to the
    production URL.
 
+## Direct-charge mode (one Stripe account, no Connect)
+
+If the studio owner's own Stripe account is also the platform account
+(the keys in `STRIPE_SECRET_KEY`), Connect can't be used — Stripe won't
+OAuth-connect an account to itself. Set `STRIPE_DIRECT_CHARGES=true`
+instead: Checkout Sessions and refunds are created on that account
+directly, `STRIPE_CONNECT_CLIENT_ID` and the "Connect Stripe" step aren't
+needed, and the webhook must listen to events from **Your account** (not
+connected accounts). Every session is tagged `metadata.app=dopa-booking`
+and the webhook ignores sessions tagged by other apps, so the account can
+be shared with other projects.
+
 ## ⚠️ Going live with Stripe (test mode → live mode)
 
 **Test mode and live mode in Stripe are two entirely separate

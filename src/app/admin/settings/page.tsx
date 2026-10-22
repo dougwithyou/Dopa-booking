@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getStudioId } from '@/components/admin/lib/data';
 import SettingsForm from '@/components/admin/SettingsForm';
 import StripeConnectCard from '@/components/admin/StripeConnectCard';
+import { directChargesEnabled } from '@/lib/stripe';
 import ConnectedBanner from '@/components/admin/ConnectedBanner';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +29,7 @@ export default async function SettingsPage({
 
       <ConnectedBanner connectedParam={searchParams.connected} />
 
-      <StripeConnectCard studio={studio} />
+      <StripeConnectCard studio={studio} directCharges={directChargesEnabled()} />
 
       <SettingsForm studio={studio} />
     </div>

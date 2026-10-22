@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import Stripe from 'stripe';
-import { connectedAccount, getStripe } from '@/lib/stripe';
+import { getStripe, studioStripeOptions } from '@/lib/stripe';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getStudioId } from '@/components/admin/lib/data';
 import type { UpsellOrder } from '@/types/db';
@@ -94,7 +94,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     if (paymentIntents.size === 0) return jsonError(400, 'no_stripe_payment');
 
     const studio = await fetchStudio(db, booking.studio_id);
-    if (!studio?.stripe_account_id) return jsonError(400, 'stripe_not_connected');
+    const stripeOptions = studio ? studioStripeOptions(studio.stripe_account_id) : null;
+    if (!stripeOptions) return jsonError(400, 'stripe_not_connected');
 
     const stripe = getStripe();
     for (const paymentIntent of paymentIntents) {
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         const refund = await stripe.refunds.create(
           { payment_intent: paymentIntent, reason: 'requested_by_customer', metadata: { bookingId: booking.id } },
           // Idempotent per payment: a retry after a partial failure won't refund twice.
-          { ...connectedAccount(studio.stripe_account_id), idempotencyKey: `cancel-refund-${paymentIntent}` }
+          { ...stripeOptions, idempotencyKey: `cancel-refund-${paymentIntent}` }
         );
         refundedCents += refund.amount;
         firstRefundId ??= refund.id;

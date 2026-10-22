@@ -52,6 +52,32 @@ export function connectedAccount(accountId: string): Stripe.RequestOptions {
   return { stripeAccount: accountId };
 }
 
+/**
+ * Direct-charge mode (`STRIPE_DIRECT_CHARGES=true`): the studio owner's own
+ * Stripe account IS the platform account (the one whose keys are in
+ * STRIPE_SECRET_KEY), so payments are created on it directly instead of on
+ * a Connect-linked account. Stripe can't OAuth-connect an account to
+ * itself, hence this mode instead of Connect.
+ */
+export function directChargesEnabled(): boolean {
+  return process.env.STRIPE_DIRECT_CHARGES === 'true';
+}
+
+/**
+ * Request options for charging or refunding on behalf of a studio: none in
+ * direct-charge mode (the platform account itself), the studio's connected
+ * account otherwise. `null` means Stripe isn't set up for this studio yet.
+ */
+export function studioStripeOptions(stripeAccountId: string | null): Stripe.RequestOptions | null {
+  if (directChargesEnabled()) return {};
+  return stripeAccountId ? connectedAccount(stripeAccountId) : null;
+}
+
+/** Tags every Checkout Session this app creates, so the webhook can ignore
+ * sessions created by other apps sharing the same Stripe account. */
+export const APP_METADATA_KEY = 'app';
+export const APP_METADATA_VALUE = 'dopa-booking';
+
 /** The platform's Connect OAuth client id (`ca_...`). */
 export function getConnectClientId(): string {
   const clientId = process.env.STRIPE_CONNECT_CLIENT_ID;

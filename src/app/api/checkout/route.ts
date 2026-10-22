@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import type Stripe from 'stripe';
-import { connectedAccount, getStripe, siteUrl } from '@/lib/stripe';
+import { APP_METADATA_KEY, APP_METADATA_VALUE, getStripe, siteUrl, studioStripeOptions } from '@/lib/stripe';
 import type { Booking, Client, DiscountCode, LandingPage, Locale, Product, Studio, UpsellOrder } from '@/types/db';
 import { productCopy } from '@/lib/products/copy';
 import {
@@ -103,10 +103,10 @@ export async function POST(request: NextRequest) {
       return jsonError(404, 'landing_page_not_found');
     }
 
-    if (!studio.stripe_account_id) {
+    const stripeOptions = studioStripeOptions(studio.stripe_account_id);
+    if (!stripeOptions) {
       return jsonError(400, 'stripe_not_connected');
     }
-    const stripeAccountId = studio.stripe_account_id;
 
     if (!hold.client_email) {
       // Holds are always created with an email by POST /api/holds; a hold
@@ -235,6 +235,7 @@ export async function POST(request: NextRequest) {
       bookingId: booking.id,
       studioId: studio.id,
       locale,
+      [APP_METADATA_KEY]: APP_METADATA_VALUE,
     };
     // Stripe caps a metadata value at 500 chars; the webhook matches on the
     // session id first anyway.
@@ -303,7 +304,7 @@ export async function POST(request: NextRequest) {
     try {
       session = await stripe.checkout.sessions.create(
         sessionParams,
-        connectedAccount(stripeAccountId)
+        stripeOptions
       );
     } catch (error) {
       // Don't leave a pending booking squatting on the slot if Stripe rejected us.

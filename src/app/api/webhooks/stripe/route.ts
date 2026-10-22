@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import type Stripe from 'stripe';
-import { getStripe } from '@/lib/stripe';
+import { APP_METADATA_KEY, APP_METADATA_VALUE, getStripe } from '@/lib/stripe';
 import type { Locale } from '@/types/db';
 import {
   adminDb,
@@ -50,6 +50,15 @@ export async function POST(request: NextRequest) {
   }
 
   const db = adminDb();
+
+  // The Stripe account may be shared with other apps (direct-charge mode):
+  // only handle Checkout Sessions this app created. Sessions with no tag
+  // predate the tag and are still matched by their booking metadata.
+  const object = event.data.object as { object?: string; metadata?: Stripe.Metadata | null };
+  const app = object.object === 'checkout.session' ? metadataString(object.metadata, APP_METADATA_KEY) : undefined;
+  if (app && app !== APP_METADATA_VALUE) {
+    return NextResponse.json({ received: true, ignored: 'other_app' });
+  }
 
   try {
     switch (event.type) {

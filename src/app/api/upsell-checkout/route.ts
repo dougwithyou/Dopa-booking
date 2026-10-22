@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import type Stripe from 'stripe';
-import { connectedAccount, getStripe, siteUrl } from '@/lib/stripe';
+import { APP_METADATA_KEY, APP_METADATA_VALUE, getStripe, siteUrl, studioStripeOptions } from '@/lib/stripe';
 import type { Locale, Product, UpsellOrder } from '@/types/db';
 import { productCopy } from '@/lib/products/copy';
 import {
@@ -67,10 +67,10 @@ export async function POST(request: NextRequest) {
     if (!studio) {
       return jsonError(404, 'studio_not_found');
     }
-    if (!studio.stripe_account_id) {
+    const stripeOptions = studioStripeOptions(studio.stripe_account_id);
+    if (!stripeOptions) {
       return jsonError(400, 'stripe_not_connected');
     }
-    const stripeAccountId = studio.stripe_account_id;
 
     // Merge duplicate product ids so the client can't sneak past MAX_QUANTITY
     // by repeating a line.
@@ -135,6 +135,7 @@ export async function POST(request: NextRequest) {
       bookingId: booking.id,
       studioId: studio.id,
       locale,
+      [APP_METADATA_KEY]: APP_METADATA_VALUE,
     };
     // Stripe caps a metadata value at 500 chars — only include the id list when
     // it fits. The webhook matches on the checkout session id anyway.
@@ -170,7 +171,7 @@ export async function POST(request: NextRequest) {
     try {
       session = await getStripe().checkout.sessions.create(
         sessionParams,
-        connectedAccount(stripeAccountId)
+        stripeOptions
       );
     } catch (error) {
       if (orderIds.length > 0) {
