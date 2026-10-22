@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import type { AppLocale } from '@/i18n/routing';
 import type { AvailabilitySlot, DiscountType, Location, Product } from '@/types/db';
+import type { PartySizeRule } from '@/lib/booking/partySize';
 import type { BookingStep, HoldResponse } from '@/lib/booking/types';
 import { formatDateTimeLabel } from '@/lib/booking/format';
 import { Stepper } from './Stepper';
@@ -23,6 +24,8 @@ export type CheckoutOffer = {
   products: Product[];
   /** The auto-applied discount (landing page code or ?promo=), if any. */
   discount: AppliedDiscount | null;
+  /** Party-size pricing: base price covers included_people, extra people cost more. */
+  people: PartySizeRule;
 };
 
 export type AppliedDiscount = { code: string; type: DiscountType; value: number; currency: string };

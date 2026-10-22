@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { landingPageLabel } from '@/components/admin/lib/data';
 import BookingEditForm from '@/components/admin/BookingEditForm';
-import { formatDate, formatTime } from '@/components/admin/lib/format';
+import { formatCents, formatDate, formatTime } from '@/components/admin/lib/format';
 import { cardCls } from '@/components/admin/lib/ui';
 
 export const dynamic = 'force-dynamic';
@@ -56,6 +56,15 @@ export default async function EditBookingPage({ params }: { params: { id: string
           <div>
             <dt className="text-xs uppercase tracking-wide text-gray-500">Session type</dt>
             <dd className="text-gray-900">{landingPageLabel(landingPage)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-gray-500">People</dt>
+            <dd className="text-gray-900">
+              {booking.party_size ?? '—'}
+              {booking.extra_people_cents > 0 && (
+                <span className="text-gray-500"> (+{formatCents(booking.extra_people_cents, booking.currency)} extra people)</span>
+              )}
+            </dd>
           </div>
           <div>
             <dt className="text-xs uppercase tracking-wide text-gray-500">Slot</dt>

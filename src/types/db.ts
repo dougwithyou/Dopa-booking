@@ -106,6 +106,10 @@ export type LandingPage = {
   section_order: LandingPageSectionKey[];
 
   base_price_cents: number | null;
+  /** People covered by base_price_cents; each extra person adds extra_person_price_cents. */
+  included_people: number;
+  extra_person_price_cents: number;
+  max_people: number;
   currency: string;
   meta_pixel_id: string | null;
   discount_code_id: string | null;
@@ -213,6 +217,10 @@ export type Booking = {
   stripe_payment_intent_id: string | null;
   stripe_checkout_session_id: string | null;
   paid_at: string | null;
+  /** How many people the client said are coming (null for older/manual bookings). */
+  party_size: number | null;
+  /** Surcharge for people beyond the page's included_people (part of amount_cents). */
+  extra_people_cents: number;
   cancelled_at: string | null;
   refunded_at: string | null;
   refund_amount_cents: number | null;

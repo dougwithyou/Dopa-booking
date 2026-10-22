@@ -121,7 +121,16 @@
       "codeApply": "Aplicar",
       "codeRemove": "Quitar",
       "codeApplied": "Código {code} aplicado ({value} de descuento)",
-      "codeInvalid": "Ese código no es válido o ya expiró."
+      "codeInvalid": "Ese código no es válido o ya expiró.",
+      "partySizeTitle": "¿Cuántas personas participarán?",
+      "partySizeHint": "El precio incluye hasta {included} personas. Cada persona adicional cuesta {price}.",
+      "partySizeLess": "Una persona menos",
+      "partySizeMore": "Una persona más",
+      "person": "persona",
+      "people": "personas",
+      "partySizeMax": "Para más de {max} personas, escríbenos antes de reservar.",
+      "partySizeRequired": "Indícanos cuántas personas participarán para continuar.",
+      "extraPeople": "Personas adicionales"
     },
     "summary": {
       "location": "Ubicación",

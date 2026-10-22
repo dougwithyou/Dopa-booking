@@ -90,6 +90,9 @@ interface EditorState {
   background_music_url: string | null;
   gallery: GalleryPhoto[];
   base_price: string;
+  included_people: string;
+  extra_person_price: string;
+  max_people: string;
   currency: string;
   meta_pixel_id: string;
   discount_code_id: string;
@@ -129,6 +132,9 @@ function fromPage(p: LandingPage): EditorState {
     background_music_url: p.background_music_url ?? null,
     gallery: [...(p.gallery ?? [])].sort((a, b) => a.order - b.order),
     base_price: centsToDollarsInput(p.base_price_cents),
+    included_people: String(p.included_people ?? 5),
+    extra_person_price: centsToDollarsInput(p.extra_person_price_cents ?? 3000),
+    max_people: String(p.max_people ?? 12),
     currency: p.currency || 'usd',
     meta_pixel_id: p.meta_pixel_id ?? '',
     discount_code_id: p.discount_code_id ?? '',
@@ -374,6 +380,12 @@ export default function LandingPageEditor({
         background_music_url: state.background_music_url,
         gallery: state.gallery,
         base_price_cents: state.base_price ? dollarsInputToCents(state.base_price) : null,
+        included_people: Math.max(1, parseInt(state.included_people, 10) || 1),
+        extra_person_price_cents: dollarsInputToCents(state.extra_person_price || '0'),
+        max_people: Math.max(
+          Math.max(1, parseInt(state.included_people, 10) || 1),
+          parseInt(state.max_people, 10) || 1
+        ),
         currency: state.currency || 'usd',
         meta_pixel_id: state.meta_pixel_id || null,
         discount_code_id: state.discount_code_id || null,
@@ -769,6 +781,51 @@ export default function LandingPageEditor({
               </option>
             ))}
           </select>
+        </div>
+      </div>
+
+      <div className={`${cardCls} space-y-3`}>
+        <div>
+          <h2 className="text-sm font-semibold text-gray-900">People per session</h2>
+          <p className="mt-0.5 text-xs text-gray-500">
+            Clients choose how many people are coming at checkout. The base price covers the included people; each
+            additional person adds the extra price.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label className={labelCls}>People included in base price</label>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              className={inputCls}
+              value={state.included_people}
+              onChange={(e) => set('included_people', e.target.value)}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Price per extra person (USD)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              className={inputCls}
+              value={state.extra_person_price}
+              onChange={(e) => set('extra_person_price', e.target.value)}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Maximum people</label>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              className={inputCls}
+              value={state.max_people}
+              onChange={(e) => set('max_people', e.target.value)}
+            />
+          </div>
         </div>
       </div>
 

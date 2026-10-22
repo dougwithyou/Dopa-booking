@@ -121,7 +121,16 @@
       "codeApply": "Apply",
       "codeRemove": "Remove",
       "codeApplied": "Code {code} applied ({value} off)",
-      "codeInvalid": "That code isn’t valid or has expired."
+      "codeInvalid": "That code isn’t valid or has expired.",
+      "partySizeTitle": "How many people are coming?",
+      "partySizeHint": "The price includes up to {included} people. Each additional person is {price}.",
+      "partySizeLess": "One fewer person",
+      "partySizeMore": "One more person",
+      "person": "person",
+      "people": "people",
+      "partySizeMax": "For more than {max} people, contact us before booking.",
+      "partySizeRequired": "Tell us how many people are coming to continue.",
+      "extraPeople": "Additional people"
     },
     "summary": {
       "location": "Location",

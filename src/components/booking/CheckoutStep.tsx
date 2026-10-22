@@ -9,6 +9,7 @@ import type { HoldResponse } from '@/lib/booking/types';
 import { Photo } from '@/components/landing/Photo';
 import { productCopy } from '@/lib/products/copy';
 import { formatDiscountValue } from '@/lib/landing/discount';
+import { extraPeople, extraPeopleCents } from '@/lib/booking/partySize';
 import type { AppliedDiscount, CheckoutOffer } from './BookingFlow';
 
 const MAX_QUANTITY = 20;
@@ -89,7 +90,13 @@ export function CheckoutStep({
     }
   }
 
-  const totalCents = sessionCents + cart.reduce((sum, l) => sum + l.product.price_cents * l.quantity, 0);
+  // Party size: required before paying; beyond offer.people.included_people
+  // each person adds extra_person_price_cents.
+  const [partySize, setPartySize] = useState<number | null>(null);
+  const peopleCount = partySize ? extraPeople(partySize, offer.people) : 0;
+  const peopleCents = partySize ? extraPeopleCents(partySize, offer.people) : 0;
+
+  const totalCents = sessionCents + peopleCents + cart.reduce((sum, l) => sum + l.product.price_cents * l.quantity, 0);
   const money = (cents: number) => formatCents(cents, offer.currency, locale);
 
   const handleExpire = useCallback(() => {
@@ -105,6 +112,10 @@ export function CheckoutStep({
   const expired = totalMs <= 0;
 
   async function handleProceed() {
+    if (!partySize) {
+      setError(t('partySizeRequired'));
+      return;
+    }
     setError(null);
     setProcessing(true);
     try {
@@ -116,6 +127,7 @@ export function CheckoutStep({
           landingPageId,
           promoParam,
           locale,
+          partySize,
           ...(discountEdited ? (discount ? { discountCode: discount.code } : { noDiscount: true }) : {}),
           items: cart.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
         }),
@@ -156,6 +168,45 @@ export function CheckoutStep({
               {pad2(minutes)}:{pad2(seconds)}
             </span>
           </div>
+
+          <section className="mb-10 max-w-md">
+            <h2 className="font-display text-xl font-black text-ink">{t('partySizeTitle')}</h2>
+            <p className="mt-1 font-body text-sm text-ink/60">
+              {t('partySizeHint', {
+                included: offer.people.included_people,
+                price: money(offer.people.extra_person_price_cents),
+              })}
+            </p>
+            <div className="mt-4 flex items-center gap-4">
+              <button
+                type="button"
+                aria-label={t('partySizeLess')}
+                onClick={() => setPartySize((n) => Math.max(1, (n ?? 2) - 1))}
+                disabled={partySize !== null && partySize <= 1}
+                className="flex h-11 w-11 items-center justify-center border border-ink/25 text-ink transition-colors hover:border-ink disabled:opacity-30"
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+              <div className="min-w-[7rem] text-center">
+                <div className="font-display text-3xl font-black tabular-nums text-ink">{partySize ?? '–'}</div>
+                <div className="font-body text-[11px] uppercase tracking-[0.12em] text-ink/50">
+                  {partySize === 1 ? t('person') : t('people')}
+                </div>
+              </div>
+              <button
+                type="button"
+                aria-label={t('partySizeMore')}
+                onClick={() => setPartySize((n) => Math.min(offer.people.max_people, (n ?? 0) + 1))}
+                disabled={partySize !== null && partySize >= offer.people.max_people}
+                className="flex h-11 w-11 items-center justify-center border border-ink/25 text-ink transition-colors hover:border-ink disabled:opacity-30"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+            {partySize !== null && partySize >= offer.people.max_people && (
+              <p className="mt-2 font-body text-xs text-ink/60">{t('partySizeMax', { max: offer.people.max_people })}</p>
+            )}
+          </section>
 
           {offer.products.length > 0 && (
             <section className="mb-10">
@@ -241,6 +292,15 @@ export function CheckoutStep({
                   {money(sessionCents)}
                 </span>
               </li>
+              {peopleCount > 0 && (
+                <li className="flex justify-between gap-4">
+                  <span>
+                    {t('extraPeople')}
+                    <span className="text-ink/50"> × {peopleCount}</span>
+                  </span>
+                  <span className="tabular-nums">{money(peopleCents)}</span>
+                </li>
+              )}
               {cart.map(({ product, quantity }) => (
                 <li key={product.id} className="flex justify-between gap-4">
                   <span>

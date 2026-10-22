@@ -91,5 +91,16 @@ async function loadCheckoutOffer(page: LandingPage, promo: string | null): Promi
     (p) => p.price_cents > 0 && (p.currency || 'usd').toLowerCase() === currency
   );
 
-  return { baseCents, sessionCents, currency, products, discount };
+  return {
+    baseCents,
+    sessionCents,
+    currency,
+    products,
+    discount,
+    people: {
+      included_people: page.included_people,
+      extra_person_price_cents: page.extra_person_price_cents,
+      max_people: page.max_people,
+    },
+  };
 }

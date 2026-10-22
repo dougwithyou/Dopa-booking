@@ -68,6 +68,7 @@ const bookingConfirmationCopy = {
       session: 'Session',
       location: 'Location',
       when: 'Date & time',
+      people: 'People',
       paid: 'Amount paid',
       sessionPrice: 'Session',
       totalPaid: 'Total paid',
@@ -87,6 +88,7 @@ const bookingConfirmationCopy = {
       session: 'Sesión',
       location: 'Ubicación',
       when: 'Fecha y hora',
+      people: 'Personas',
       paid: 'Monto pagado',
       sessionPrice: 'Sesión',
       totalPaid: 'Total pagado',
@@ -105,6 +107,7 @@ const bookingConfirmationCopy = {
     session: string;
     location: string;
     when: string;
+    people: string;
     paid: string;
     sessionPrice: string;
     totalPaid: string;
@@ -136,6 +139,7 @@ export function buildBookingConfirmationEmail(params: {
     [copy.detailLabels.session, sessionType],
     [copy.detailLabels.location, where],
     [copy.detailLabels.when, when],
+    ...(booking.party_size ? ([[copy.detailLabels.people, String(booking.party_size)]] as Array<[string, string]>) : []),
     ...(extras.length === 0 ? ([[copy.detailLabels.paid, paid]] as Array<[string, string]>) : []),
   ];
   const paymentRows = extrasRows(booking, extras, locale, {
@@ -168,6 +172,7 @@ export function buildBookingConfirmationEmail(params: {
     `${copy.detailLabels.session}: ${sessionType}`,
     `${copy.detailLabels.location}: ${where}`,
     `${copy.detailLabels.when}: ${when}`,
+    ...(booking.party_size ? [`${copy.detailLabels.people}: ${booking.party_size}`] : []),
     ...(paymentRows.length > 0
       ? ['', copy.extrasHeading, ...paymentRows.map(([label, value]) => `${label}: ${value}`)]
       : [`${copy.detailLabels.paid}: ${paid}`]),
@@ -214,6 +219,18 @@ export function buildAdminBookingNotificationEmail(params: {
     ['Session', sessionType],
     ['Location', where],
     ['When', when],
+    ...(booking.party_size
+      ? ([
+          [
+            'People',
+            `${booking.party_size}${
+              booking.extra_people_cents > 0
+                ? ` (incl. ${formatCurrency(booking.extra_people_cents, booking.currency, locale)} for extra people)`
+                : ''
+            }`,
+          ],
+        ] as Array<[string, string]>)
+      : []),
     ...extrasRows(booking, extras, locale, { session: 'Session price', total: 'Total paid' }),
     ...(extras.length === 0 ? ([['Amount', amount]] as Array<[string, string]>) : []),
     ['Booking ID', booking.id],

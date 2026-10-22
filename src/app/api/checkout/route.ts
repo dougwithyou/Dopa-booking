@@ -4,6 +4,7 @@ import type Stripe from 'stripe';
 import { APP_METADATA_KEY, APP_METADATA_VALUE, getStripe, siteUrl, studioStripeOptions } from '@/lib/stripe';
 import type { Booking, Client, DiscountCode, LandingPage, Locale, Product, Studio, UpsellOrder } from '@/types/db';
 import { productCopy } from '@/lib/products/copy';
+import { extraPeople, extraPeopleCents } from '@/lib/booking/partySize';
 import {
   adminDb,
   applyDiscount,
@@ -41,6 +42,9 @@ const CheckoutSchema = z.object({
   // they typed, or `noDiscount` after removing the auto-applied one.
   discountCode: z.string().trim().min(1).max(64).nullish(),
   noDiscount: z.boolean().optional(),
+  // How many people are coming; beyond the page's included_people each one
+  // adds extra_person_price_cents.
+  partySize: z.number().int().min(1).max(50),
   locale: z.enum(['en', 'es']),
   // Optional extras picked on the checkout step, charged in the same session.
   items: z
@@ -57,13 +61,14 @@ const CheckoutSchema = z.object({
 /**
  * POST /api/checkout
  *
- * Body: { holdId, landingPageId, promoParam?, discountCode?, noDiscount?, locale, items?: [{ productId, quantity }] }
+ * Body: { holdId, landingPageId, partySize, promoParam?, discountCode?, noDiscount?, locale, items?: [{ productId, quantity }] }
  * 200:  { url }                         — Stripe Checkout Session URL
  * 409:  { error: 'hold_expired' }       — hold released or past expires_at
  * 409:  { error: 'slot_unavailable' }   — slot got booked by someone else
  * 400:  { error: 'stripe_not_connected' } — studio has no connected account
  * 400:  { error: 'invalid_products' | 'too_many_items' | 'mixed_currency' }
  * 400:  { error: 'invalid_discount_code' } — typed code unknown/expired/used up
+ * 400:  { error: 'party_too_large' } — partySize above the page's max_people
  *
  * Creates a `pending` booking (which makes `slot_is_available()` return false,
  * locking the slot for the duration of checkout) and then a Checkout Session
@@ -143,8 +148,18 @@ export async function POST(request: NextRequest) {
         landingPage,
       });
     }
-    const amountCents = applyDiscount(basePriceCents, discountCode);
+    const sessionCents = applyDiscount(basePriceCents, discountCode);
     const currency = (landingPage.currency || DEFAULT_CURRENCY).toLowerCase();
+
+    // ---- Party size -----------------------------------------------------------
+    // The discount applies to the session price only, not the extra people.
+    if (payload.partySize > landingPage.max_people) {
+      return jsonError(400, 'party_too_large');
+    }
+    const extraPeopleCount = extraPeople(payload.partySize, landingPage);
+    const peopleCents = extraPeopleCents(payload.partySize, landingPage);
+    // What the booking itself costs: discounted session + extra people.
+    const amountCents = sessionCents + peopleCents;
 
     // ---- Extras -------------------------------------------------------------
     const extras = await resolveExtras(db, studio.id, currency, payload.items ?? []);
@@ -181,6 +196,8 @@ export async function POST(request: NextRequest) {
       client_id: client.id,
       status: 'pending',
       amount_cents: amountCents,
+      party_size: payload.partySize,
+      extra_people_cents: peopleCents,
       currency,
       discount_code_id: discountCode?.id ?? null,
       payment_method: 'stripe',
@@ -262,16 +279,16 @@ export async function POST(request: NextRequest) {
       metadata.upsellOrderIds = joinedOrderIds;
     }
 
-    // A 100%-off session with paid extras: Stripe can't take a zero-amount
-    // line, so only the extras are charged.
-    const sessionLine: Stripe.Checkout.SessionCreateParams.LineItem[] =
-      amountCents > 0
+    // Stripe can't take a zero-amount line: a 100%-off session is left out
+    // and only the extra people / extras are charged.
+    const sessionLine: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+      ...(sessionCents > 0
         ? [
             {
               quantity: 1,
               price_data: {
                 currency,
-                unit_amount: amountCents,
+                unit_amount: sessionCents,
                 product_data: {
                   name: sessionLineItemName(landingPage, locale),
                   description: sessionLineItemDescription(location.name, slot.start_time, studio, locale),
@@ -279,7 +296,25 @@ export async function POST(request: NextRequest) {
               },
             },
           ]
-        : [];
+        : []),
+      ...(peopleCents > 0
+        ? [
+            {
+              quantity: extraPeopleCount,
+              price_data: {
+                currency,
+                unit_amount: landingPage.extra_person_price_cents,
+                product_data: {
+                  name:
+                    locale === 'es'
+                      ? `Persona adicional (más de ${landingPage.included_people})`
+                      : `Additional person (over ${landingPage.included_people})`,
+                },
+              },
+            },
+          ]
+        : []),
+    ];
 
     // ---- Stripe Checkout Session (on the connected account) ---------------
     const stripe = getStripe();
