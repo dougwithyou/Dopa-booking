@@ -4,6 +4,7 @@ import SettingsForm from '@/components/admin/SettingsForm';
 import StripeConnectCard from '@/components/admin/StripeConnectCard';
 import { directChargesEnabled } from '@/lib/stripe';
 import ConnectedBanner from '@/components/admin/ConnectedBanner';
+import ChangePasswordCard from '@/components/admin/ChangePasswordCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,7 @@ export default async function SettingsPage({
     <div className="max-w-2xl space-y-6">
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Settings</h1>
-        <p className="text-sm text-gray-500">Studio profile and payment setup.</p>
+        <p className="text-sm text-gray-500">Studio profile, payment setup and your password.</p>
       </div>
 
       <ConnectedBanner connectedParam={searchParams.connected} />
@@ -32,6 +33,8 @@ export default async function SettingsPage({
       <StripeConnectCard studio={studio} directCharges={directChargesEnabled()} />
 
       <SettingsForm studio={studio} />
+
+      <ChangePasswordCard />
     </div>
   );
 }
