@@ -109,8 +109,8 @@ export async function POST(request: NextRequest) {
       return jsonError(404, 'landing_page_not_found');
     }
 
-    const stripeOptions = studioStripeOptions(studio.stripe_account_id);
-    if (!stripeOptions) {
+    const stripeTarget = studioStripeOptions(studio.stripe_account_id);
+    if (!stripeTarget) {
       return jsonError(400, 'stripe_not_connected');
     }
 
@@ -322,7 +322,7 @@ export async function POST(request: NextRequest) {
     try {
       session = await stripe.checkout.sessions.create(
         sessionParams,
-        stripeOptions
+        stripeTarget.options
       );
     } catch (error) {
       // Don't leave a pending booking squatting on the slot if Stripe rejected us.

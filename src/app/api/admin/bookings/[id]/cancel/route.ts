@@ -94,8 +94,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     if (paymentIntents.size === 0) return jsonError(400, 'no_stripe_payment');
 
     const studio = await fetchStudio(db, booking.studio_id);
-    const stripeOptions = studio ? studioStripeOptions(studio.stripe_account_id) : null;
-    if (!stripeOptions) return jsonError(400, 'stripe_not_connected');
+    const stripeTarget = studio ? studioStripeOptions(studio.stripe_account_id) : null;
+    if (!stripeTarget) return jsonError(400, 'stripe_not_connected');
 
     const stripe = getStripe();
     for (const paymentIntent of paymentIntents) {
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         const refund = await stripe.refunds.create(
           { payment_intent: paymentIntent, reason: 'requested_by_customer', metadata: { bookingId: booking.id } },
           // Idempotent per payment: a retry after a partial failure won't refund twice.
-          { ...stripeOptions, idempotencyKey: `cancel-refund-${paymentIntent}` }
+          { ...stripeTarget.options, idempotencyKey: `cancel-refund-${paymentIntent}` }
         );
         refundedCents += refund.amount;
         firstRefundId ??= refund.id;

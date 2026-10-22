@@ -64,13 +64,17 @@ export function directChargesEnabled(): boolean {
 }
 
 /**
- * Request options for charging or refunding on behalf of a studio: none in
- * direct-charge mode (the platform account itself), the studio's connected
- * account otherwise. `null` means Stripe isn't set up for this studio yet.
+ * Where to charge or refund on behalf of a studio. `options` is undefined in
+ * direct-charge mode (the platform account itself) — stripe-node rejects an
+ * empty `{}` options argument as "Unknown arguments", so never pass one —
+ * and the studio's connected account otherwise. `null` means Stripe isn't
+ * set up for this studio yet.
  */
-export function studioStripeOptions(stripeAccountId: string | null): Stripe.RequestOptions | null {
-  if (directChargesEnabled()) return {};
-  return stripeAccountId ? connectedAccount(stripeAccountId) : null;
+export function studioStripeOptions(
+  stripeAccountId: string | null
+): { options: Stripe.RequestOptions | undefined } | null {
+  if (directChargesEnabled()) return { options: undefined };
+  return stripeAccountId ? { options: connectedAccount(stripeAccountId) } : null;
 }
 
 /** Tags every Checkout Session this app creates, so the webhook can ignore
