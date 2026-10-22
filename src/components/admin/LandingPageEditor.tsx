@@ -94,6 +94,7 @@ interface EditorState {
   background_music_url: string | null;
   gallery: GalleryPhoto[];
   base_price: string;
+  show_price: boolean;
   included_people: string;
   extra_person_price: string;
   max_people: string;
@@ -138,6 +139,7 @@ function fromPage(p: LandingPage): EditorState {
     background_music_url: p.background_music_url ?? null,
     gallery: [...(p.gallery ?? [])].sort((a, b) => a.order - b.order),
     base_price: centsToDollarsInput(p.base_price_cents),
+    show_price: p.show_price ?? true,
     included_people: String(p.included_people ?? 5),
     extra_person_price: centsToDollarsInput(p.extra_person_price_cents ?? 3000),
     max_people: String(p.max_people ?? 12),
@@ -392,6 +394,7 @@ export default function LandingPageEditor({
         background_music_url: state.background_music_url,
         gallery: state.gallery,
         base_price_cents: state.base_price ? dollarsInputToCents(state.base_price) : null,
+        show_price: state.show_price,
         included_people: Math.max(1, parseInt(state.included_people, 10) || 1),
         extra_person_price_cents: dollarsInputToCents(state.extra_person_price || '0'),
         max_people: Math.max(
@@ -806,6 +809,10 @@ export default function LandingPageEditor({
             value={state.base_price}
             onChange={(e) => set('base_price', e.target.value)}
           />
+          <label className="mt-2 flex items-center gap-2 text-xs text-gray-700">
+            <input type="checkbox" checked={state.show_price} onChange={(e) => set('show_price', e.target.checked)} />
+            Show price on the page (with the active discount)
+          </label>
         </div>
         <div>
           <label className={labelCls}>Meta pixel ID override</label>

@@ -115,6 +115,8 @@ export type LandingPage = {
 
   base_price_cents: number | null;
   /** People covered by base_price_cents; each extra person adds extra_person_price_cents. */
+  /** Show the session price on the landing page's closer ticket. */
+  show_price: boolean;
   included_people: number;
   extra_person_price_cents: number;
   max_people: number;

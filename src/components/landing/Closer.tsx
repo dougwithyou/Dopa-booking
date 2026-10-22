@@ -1,12 +1,36 @@
 import type { ReactNode } from 'react';
 import { Countdown } from './Countdown';
 
+export interface CloserPrice {
+  /** List price, shown struck through when a discount applies. */
+  original: string | null;
+  current: string;
+  peopleLine: string;
+  extraLine: string | null;
+}
+
+function PriceBlock({ price }: { price: CloserPrice }) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-center gap-3">
+        {price.original && (
+          <span className="font-display text-xl font-extrabold text-ink/40 line-through decoration-2">{price.original}</span>
+        )}
+        <span className="font-display text-[40px] font-black leading-none text-ink">{price.current}</span>
+      </div>
+      <div className="mt-2 font-body text-[11px] uppercase tracking-[0.16em] text-ink/70">{price.peopleLine}</div>
+      {price.extraLine && <div className="mt-1 font-body text-xs text-ink/60">{price.extraLine}</div>}
+    </div>
+  );
+}
+
 export function Closer({
   sectionId,
   eyebrow,
   heading,
   body,
   ticket,
+  price,
   ctaHref,
   ctaLabel,
 }: {
@@ -23,6 +47,8 @@ export function Closer({
     minutesLabel: string;
     secondsLabel: string;
   } | null;
+  /** Session price block; null when hidden or no price is set. */
+  price: CloserPrice | null;
   ctaHref: string;
   ctaLabel: string;
 }) {
@@ -43,6 +69,12 @@ export function Closer({
           </div>
           <div className="mt-1 font-display text-[30px] font-black tracking-[0.02em] text-wine">{ticket.code}</div>
           <div className="mt-1.5 font-body text-[10px] uppercase tracking-[0.18em] text-moss">{ticket.label}</div>
+          {price && (
+            <>
+              <div className="my-5 border-t border-dashed border-[var(--line)]" />
+              <PriceBlock price={price} />
+            </>
+          )}
           {ticket.expiresAt && (
             <Countdown
               expiresAt={ticket.expiresAt}
@@ -51,6 +83,12 @@ export function Closer({
               secondsLabel={ticket.secondsLabel}
             />
           )}
+        </div>
+      )}
+
+      {!ticket && price && (
+        <div className="mx-auto max-w-[420px] rounded-sm bg-parchment px-[26px] py-[28px] text-ink">
+          <PriceBlock price={price} />
         </div>
       )}
 

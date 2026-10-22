@@ -36,7 +36,9 @@
       "minutes": "Min",
       "seconds": "Seg",
       "cta": "Reservar mi fecha ahora",
-      "useCode": "Usa el código"
+      "useCode": "Usa el código",
+      "priceUpTo": "Sesión para hasta {count} personas",
+      "priceExtraPerson": "+ {price} por persona adicional"
     },
     "footer": {
       "tagline": "hidopastudio.com · @hidopastudio · Washington DC / MD / VA"

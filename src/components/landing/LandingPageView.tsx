@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
 import type { DiscountCode, LandingPage, LandingPageSectionKey, Locale } from '@/types/db';
 import { pickOptional, pickText } from '@/lib/landing/copy';
-import { formatDiscountValue } from '@/lib/landing/discount';
+import { applyDiscount, formatDiscountValue, isDiscountUsable } from '@/lib/landing/discount';
 import { resolveSectionOrder } from '@/lib/landing/sections';
 import { themeToStyle } from '@/lib/landing/theme';
 import { getTemplate } from '@/lib/landing/templates';
@@ -17,7 +17,7 @@ import type { HeroSlide } from './HeroSlideshow';
 import { GalleryLightbox } from './GalleryLightbox';
 import { Testimonials } from './Testimonials';
 import { About } from './About';
-import { Closer } from './Closer';
+import { Closer, type CloserPrice } from './Closer';
 import { Extras, type ExtraShowcaseItem } from './Extras';
 import { Footer } from './Footer';
 import { MetaPixel } from './MetaPixel';
@@ -91,16 +91,43 @@ export async function LandingPageView({
     .sort((a, b) => a.order - b.order)
     .map((item) => ({ quote: pickText(locale, item.quote_en, item.quote_es), author: item.author }));
 
+  // Only a code the checkout would actually accept right now (active, not
+  // expired, not used up) drives the ticket and the discounted price.
+  const activeDiscount = discount && isDiscountUsable(discount) ? discount : null;
+
   const ticket =
-    discount && discount.is_active
+    activeDiscount
       ? {
-          code: discount.code,
-          label: t('closer.ticketLabel', { value: formatDiscountValue(discount) }),
-          expiresAt: discount.expires_at,
+          code: activeDiscount.code,
+          label: t('closer.ticketLabel', { value: formatDiscountValue(activeDiscount) }),
+          expiresAt: activeDiscount.expires_at,
           useCodeLabel: t('closer.useCode'),
           hoursLabel: t('closer.hours'),
           minutesLabel: t('closer.minutes'),
           secondsLabel: t('closer.seconds'),
+        }
+      : null;
+
+  // Session price on the closer ticket, priced exactly like the checkout
+  // (same discount math); whole-dollar amounts drop the cents.
+  const money = (cents: number) =>
+    new Intl.NumberFormat(locale === 'es' ? 'es-US' : 'en-US', {
+      style: 'currency',
+      currency: (page.currency || 'usd').toUpperCase(),
+      minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+    }).format(cents / 100);
+  const basePrice = page.base_price_cents ?? 0;
+  const discountedPrice = applyDiscount(basePrice, activeDiscount);
+  const price: CloserPrice | null =
+    page.show_price && basePrice > 0
+      ? {
+          original: discountedPrice < basePrice ? money(basePrice) : null,
+          current: money(discountedPrice),
+          peopleLine: t('closer.priceUpTo', { count: page.included_people }),
+          extraLine:
+            page.extra_person_price_cents > 0
+              ? t('closer.priceExtraPerson', { price: money(page.extra_person_price_cents) })
+              : null,
         }
       : null;
 
@@ -155,6 +182,7 @@ export async function LandingPageView({
         heading={renderDuo(closerHeading)}
         body={closerBody}
         ticket={ticket}
+        price={price}
         ctaHref={bookHref}
         ctaLabel={t('closer.cta')}
       />
@@ -175,7 +203,7 @@ export async function LandingPageView({
       <MetaPixel pixelId={metaPixelId} />
       {ticket && (
         <PromoBanner
-          offLabel={t('banner.off', { value: formatDiscountValue(discount!) })}
+          offLabel={t('banner.off', { value: formatDiscountValue(activeDiscount!) })}
           codeLabel={t('banner.code')}
           code={ticket.code}
           endsInLabel={t('banner.endsIn')}
