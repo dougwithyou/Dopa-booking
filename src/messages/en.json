@@ -116,8 +116,12 @@
       "remove": "Remove",
       "ticketTitle": "Your order",
       "session": "Photo session",
-      "discount": "Discount applied",
-      "total": "Total"
+      "total": "Total",
+      "codePlaceholder": "Discount code",
+      "codeApply": "Apply",
+      "codeRemove": "Remove",
+      "codeApplied": "Code {code} applied ({value} off)",
+      "codeInvalid": "That code isn’t valid or has expired."
     },
     "summary": {
       "location": "Location",

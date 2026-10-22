@@ -8,7 +8,8 @@ import { formatCents } from '@/lib/formatMoney';
 import type { HoldResponse } from '@/lib/booking/types';
 import { Photo } from '@/components/landing/Photo';
 import { productCopy } from '@/lib/products/copy';
-import type { CheckoutOffer } from './BookingFlow';
+import { formatDiscountValue } from '@/lib/landing/discount';
+import type { AppliedDiscount, CheckoutOffer } from './BookingFlow';
 
 const MAX_QUANTITY = 20;
 
@@ -44,7 +45,51 @@ export function CheckoutStep({
         .filter((line) => line.quantity > 0),
     [offer.products, quantities]
   );
-  const totalCents = offer.sessionCents + cart.reduce((sum, l) => sum + l.product.price_cents * l.quantity, 0);
+  // Discount: starts as the auto-applied one; the client can remove it and
+  // apply another code. `edited` tells /api/checkout to honor this choice
+  // instead of re-resolving the landing page's auto-apply code.
+  const [discount, setDiscount] = useState<AppliedDiscount | null>(offer.discount);
+  const [sessionCents, setSessionCents] = useState(offer.sessionCents);
+  const [discountEdited, setDiscountEdited] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [applying, setApplying] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+
+  function removeDiscount() {
+    setDiscount(null);
+    setSessionCents(offer.baseCents);
+    setDiscountEdited(true);
+    setCodeError(null);
+  }
+
+  async function applyCode() {
+    const code = codeInput.trim();
+    if (!code) return;
+    setApplying(true);
+    setCodeError(null);
+    try {
+      const res = await fetch('/api/discount/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ landingPageId, code }),
+      });
+      if (!res.ok) {
+        setCodeError(t('codeInvalid'));
+        return;
+      }
+      const data = (await res.json()) as AppliedDiscount & { sessionCents: number };
+      setDiscount({ code: data.code, type: data.type, value: data.value, currency: data.currency });
+      setSessionCents(data.sessionCents);
+      setDiscountEdited(true);
+      setCodeInput('');
+    } catch {
+      setCodeError(t('errorGeneric'));
+    } finally {
+      setApplying(false);
+    }
+  }
+
+  const totalCents = sessionCents + cart.reduce((sum, l) => sum + l.product.price_cents * l.quantity, 0);
   const money = (cents: number) => formatCents(cents, offer.currency, locale);
 
   const handleExpire = useCallback(() => {
@@ -71,6 +116,7 @@ export function CheckoutStep({
           landingPageId,
           promoParam,
           locale,
+          ...(discountEdited ? (discount ? { discountCode: discount.code } : { noDiscount: true }) : {}),
           items: cart.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
         }),
       });
@@ -189,15 +235,12 @@ export function CheckoutStep({
               <li className="flex justify-between gap-4">
                 <span>{t('session')}</span>
                 <span className="tabular-nums">
-                  {offer.sessionCents < offer.baseCents && (
+                  {sessionCents < offer.baseCents && (
                     <span className="mr-2 text-ink/40 line-through">{money(offer.baseCents)}</span>
                   )}
-                  {money(offer.sessionCents)}
+                  {money(sessionCents)}
                 </span>
               </li>
-              {offer.sessionCents < offer.baseCents && (
-                <li className="text-xs text-moss">{t('discount')}</li>
-              )}
               {cart.map(({ product, quantity }) => (
                 <li key={product.id} className="flex justify-between gap-4">
                   <span>
@@ -211,6 +254,48 @@ export function CheckoutStep({
             <div className="mt-4 flex justify-between gap-4 border-t border-ink/10 pt-3 font-display text-lg font-black text-ink">
               <span>{t('total')}</span>
               <span className="tabular-nums">{money(totalCents)}</span>
+            </div>
+
+            <div className="mt-4 border-t border-ink/10 pt-3 font-body text-sm">
+              {discount ? (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-moss">
+                    {t('codeApplied', { code: discount.code, value: formatDiscountValue(discount) })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={removeDiscount}
+                    className="shrink-0 text-xs font-semibold uppercase tracking-[0.12em] text-ink/60 underline underline-offset-4 hover:text-ink"
+                  >
+                    {t('codeRemove')}
+                  </button>
+                </div>
+              ) : (
+                <form
+                  className="flex gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void applyCode();
+                  }}
+                >
+                  <input
+                    value={codeInput}
+                    onChange={(e) => setCodeInput(e.target.value)}
+                    placeholder={t('codePlaceholder')}
+                    aria-label={t('codePlaceholder')}
+                    autoCapitalize="characters"
+                    className="min-w-0 flex-1 border border-ink/20 bg-white/60 px-3 py-2 text-sm uppercase tracking-[0.06em] text-ink placeholder:normal-case placeholder:tracking-normal placeholder:text-ink/40 focus:border-ink/50 focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    disabled={applying || !codeInput.trim()}
+                    className="border border-ink/30 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink transition-colors hover:border-ink disabled:opacity-40"
+                  >
+                    {applying ? '…' : t('codeApply')}
+                  </button>
+                </form>
+              )}
+              {codeError && <p className="mt-2 text-xs text-wine">{codeError}</p>}
             </div>
           </section>
 

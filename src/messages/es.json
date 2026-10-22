@@ -116,8 +116,12 @@
       "remove": "Quitar",
       "ticketTitle": "Tu pedido",
       "session": "Sesión de fotos",
-      "discount": "Descuento aplicado",
-      "total": "Total"
+      "total": "Total",
+      "codePlaceholder": "Código de descuento",
+      "codeApply": "Aplicar",
+      "codeRemove": "Quitar",
+      "codeApplied": "Código {code} aplicado ({value} de descuento)",
+      "codeInvalid": "Ese código no es válido o ya expiró."
     },
     "summary": {
       "location": "Ubicación",

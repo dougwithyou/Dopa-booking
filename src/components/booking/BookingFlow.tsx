@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import type { AppLocale } from '@/i18n/routing';
-import type { AvailabilitySlot, Location, Product } from '@/types/db';
+import type { AvailabilitySlot, DiscountType, Location, Product } from '@/types/db';
 import type { BookingStep, HoldResponse } from '@/lib/booking/types';
 import { formatDateTimeLabel } from '@/lib/booking/format';
 import { Stepper } from './Stepper';
@@ -21,7 +21,11 @@ export type CheckoutOffer = {
   currency: string;
   /** Extras that can be added to the same payment. */
   products: Product[];
+  /** The auto-applied discount (landing page code or ?promo=), if any. */
+  discount: AppliedDiscount | null;
 };
+
+export type AppliedDiscount = { code: string; type: DiscountType; value: number; currency: string };
 
 export function BookingFlow({
   locale,

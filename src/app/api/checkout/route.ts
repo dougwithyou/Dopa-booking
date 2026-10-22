@@ -12,6 +12,7 @@ import {
   fetchLandingPage,
   isHoldLive,
   jsonError,
+  resolveDiscountByCode,
   resolveDiscountCode,
   resolveSlotChain,
   upsertClient,
@@ -36,6 +37,10 @@ const CheckoutSchema = z.object({
   holdId: z.string().uuid(),
   landingPageId: z.string().uuid(),
   promoParam: z.string().trim().max(120).nullish(),
+  // Set when the client edited the discount on the checkout step: a code
+  // they typed, or `noDiscount` after removing the auto-applied one.
+  discountCode: z.string().trim().min(1).max(64).nullish(),
+  noDiscount: z.boolean().optional(),
   locale: z.enum(['en', 'es']),
   // Optional extras picked on the checkout step, charged in the same session.
   items: z
@@ -52,12 +57,13 @@ const CheckoutSchema = z.object({
 /**
  * POST /api/checkout
  *
- * Body: { holdId, landingPageId, promoParam?, locale, items?: [{ productId, quantity }] }
+ * Body: { holdId, landingPageId, promoParam?, discountCode?, noDiscount?, locale, items?: [{ productId, quantity }] }
  * 200:  { url }                         — Stripe Checkout Session URL
  * 409:  { error: 'hold_expired' }       — hold released or past expires_at
  * 409:  { error: 'slot_unavailable' }   — slot got booked by someone else
  * 400:  { error: 'stripe_not_connected' } — studio has no connected account
  * 400:  { error: 'invalid_products' | 'too_many_items' | 'mixed_currency' }
+ * 400:  { error: 'invalid_discount_code' } — typed code unknown/expired/used up
  *
  * Creates a `pending` booking (which makes `slot_is_available()` return false,
  * locking the slot for the duration of checkout) and then a Checkout Session
@@ -120,11 +126,23 @@ export async function POST(request: NextRequest) {
       return jsonError(400, 'price_not_configured');
     }
 
-    const discountCode: DiscountCode | null = await resolveDiscountCode(db, {
-      studioId: studio.id,
-      promoParam: payload.promoParam,
-      landingPage,
-    });
+    let discountCode: DiscountCode | null;
+    if (payload.noDiscount) {
+      discountCode = null;
+    } else if (payload.discountCode) {
+      discountCode = await resolveDiscountByCode(db, {
+        studioId: studio.id,
+        code: payload.discountCode,
+        landingPageId: landingPage.id,
+      });
+      if (!discountCode) return jsonError(400, 'invalid_discount_code');
+    } else {
+      discountCode = await resolveDiscountCode(db, {
+        studioId: studio.id,
+        promoParam: payload.promoParam,
+        landingPage,
+      });
+    }
     const amountCents = applyDiscount(basePriceCents, discountCode);
     const currency = (landingPage.currency || DEFAULT_CURRENCY).toLowerCase();
 

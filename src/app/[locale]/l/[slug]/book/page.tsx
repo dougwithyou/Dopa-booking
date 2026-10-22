@@ -65,9 +65,11 @@ async function loadCheckoutOffer(page: LandingPage, promo: string | null): Promi
   const baseCents = page.base_price_cents ?? 0;
 
   let sessionCents = baseCents;
+  let discount: CheckoutOffer['discount'] = null;
   try {
     const code = await resolveDiscountCode(db, { studioId: page.studio_id, promoParam: promo, landingPage: page });
     sessionCents = applyDiscount(baseCents, code);
+    if (code) discount = { code: code.code, type: code.type, value: code.value, currency: code.currency };
   } catch (error) {
     console.error('[book] failed to resolve discount for ticket preview', error);
   }
@@ -89,5 +91,5 @@ async function loadCheckoutOffer(page: LandingPage, promo: string | null): Promi
     (p) => p.price_cents > 0 && (p.currency || 'usd').toLowerCase() === currency
   );
 
-  return { baseCents, sessionCents, currency, products };
+  return { baseCents, sessionCents, currency, products, discount };
 }

@@ -338,6 +338,31 @@ export async function resolveDiscountCode(
   return null;
 }
 
+/**
+ * A code the client typed at checkout: matched on `discount_codes.code`
+ * (case-insensitive), scoped to the studio, and only if usable right now.
+ * A code tied to a specific landing page only works on that page.
+ */
+export async function resolveDiscountByCode(
+  db: AdminDb,
+  params: { studioId: string; code: string; landingPageId: string }
+): Promise<DiscountCode | null> {
+  const typed = params.code.trim();
+  if (!typed) return null;
+  const { data, error } = await db
+    .from('discount_codes')
+    .select('*')
+    .eq('studio_id', params.studioId)
+    .ilike('code', typed.replace(/[\\%_]/g, (c) => `\\${c}`));
+  if (error) throw error;
+  const code = ((data as DiscountCode[] | null) ?? []).find(
+    (c) => c.code.toLowerCase() === typed.toLowerCase()
+  );
+  if (!code || !isDiscountUsable(code)) return null;
+  if (code.landing_page_id && code.landing_page_id !== params.landingPageId) return null;
+  return code;
+}
+
 async function incrementDiscountUse(db: AdminDb, discountCodeId: string): Promise<void> {
   // Read-then-write: `times_used` is a soft cap used for reporting and
   // `max_uses` enforcement, not a correctness-critical counter, so the small
