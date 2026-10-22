@@ -35,15 +35,21 @@ async function handleAdmin(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isLoginPage = request.nextUrl.pathname === '/admin/login';
+  const path = request.nextUrl.pathname;
+  // Signed-out screens: redirect away from them once signed in.
+  const isSignedOutPage = path === '/admin/login' || path === '/admin/forgot-password';
+  // Password-recovery steps: reachable without a session (the emailed link
+  // lands here before one exists) and with one (right after the link signs
+  // the admin in, to set the new password).
+  const isRecoveryStep = path === '/admin/auth/confirm' || path === '/admin/reset-password';
 
-  if (!user && !isLoginPage) {
+  if (!user && !isSignedOutPage && !isRecoveryStep) {
     const url = request.nextUrl.clone();
     url.pathname = '/admin/login';
     return NextResponse.redirect(url);
   }
 
-  if (user && isLoginPage) {
+  if (user && isSignedOutPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/admin';
     return NextResponse.redirect(url);

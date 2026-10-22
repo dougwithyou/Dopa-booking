@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { btnPrimary, inputCls, labelCls } from '@/components/admin/lib/ui';
@@ -73,6 +74,12 @@ export default function AdminLoginPage() {
           {loading ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
+
+      <p className="mt-4 text-center text-sm">
+        <Link href="/admin/forgot-password" className="text-gray-500 underline-offset-4 hover:text-gray-900 hover:underline">
+          Forgot your password?
+        </Link>
+      </p>
     </div>
   );
 }
