@@ -380,7 +380,13 @@ export default function AvailabilityManager({
                           className={btnGhost}
                           onClick={() => handleToggleBlock(s)}
                           disabled={booked}
-                          title={booked ? 'Already booked — cannot block' : s.is_blocked ? 'Unblock' : 'Block'}
+                          title={
+                            booked
+                              ? 'Already booked — cannot block'
+                              : s.is_blocked
+                                ? 'Unblock (back on sale)'
+                                : 'Block (shows as taken on the booking page)'
+                          }
                         >
                           {s.is_blocked ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Ban className="h-3.5 w-3.5" />}
                         </button>

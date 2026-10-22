@@ -30,7 +30,8 @@ const REFRESH_MS = 30_000;
 
 /**
  * Slots come from the public_slot_availability() SQL function, which flags
- * each one as free or taken (booked, or held by someone mid-checkout)
+ * each one as free or taken (booked, held by someone mid-checkout, or
+ * blocked by the admin)
  * without exposing who. Taken slots render greyed out and unclickable. The
  * hold-creation call in the next step remains the real source of truth and
  * returns 409 if a slot was taken in the last few seconds.
