@@ -4,6 +4,7 @@ import { sendEmailSafe } from './client';
 import { resolveLocale } from './format';
 import {
   type BookingEmailExtra,
+  buildAbandonedCartEmail,
   buildAdminBookingNotificationEmail,
   buildBookingCancellationEmail,
   buildBookingConfirmationEmail,
@@ -111,4 +112,23 @@ export async function sendBookingCancellation(params: {
 }): Promise<void> {
   const content = buildBookingCancellationEmail({ ...params, locale: resolveLocale(params.locale) });
   await sendEmailSafe({ to: params.client.email, content });
+}
+
+/**
+ * "You didn't finish your booking" follow-up for a checkout the client
+ * started (entered their details) but never paid. Bilingual; fails soft.
+ */
+export async function sendAbandonedCartEmail(params: {
+  to: string;
+  clientName: string | null;
+  landingPage: LandingPage;
+  location: Location | null;
+  slot: AvailabilitySlot | null;
+  locale: Locale;
+  bookUrl: string;
+  discountCode: string | null;
+}): Promise<void> {
+  const { to, ...rest } = params;
+  const content = buildAbandonedCartEmail({ ...rest, locale: resolveLocale(params.locale) });
+  await sendEmailSafe({ to, content });
 }

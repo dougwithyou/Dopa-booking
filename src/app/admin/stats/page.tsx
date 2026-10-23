@@ -8,6 +8,8 @@ import {
   revenueBySessionType,
 } from '@/components/admin/lib/stats';
 import StatCard from '@/components/admin/StatCard';
+import FunnelCard, { FUNNEL_RANGES } from '@/components/admin/FunnelCard';
+import type { FunnelRow } from '@/types/db';
 import RevenueChart from '@/components/admin/charts/RevenueChart';
 import SessionTypeChart from '@/components/admin/charts/SessionTypeChart';
 import LocationChart from '@/components/admin/charts/LocationChart';
@@ -16,8 +18,11 @@ import { cardCls, tableWrapCls, tdCls, thCls } from '@/components/admin/lib/ui';
 
 export const dynamic = 'force-dynamic';
 
-export default async function StatsPage() {
+export default async function StatsPage({ searchParams }: { searchParams: { range?: string } }) {
   const supabase = await createServerSupabaseClient();
+  const range = FUNNEL_RANGES.find((r) => r.key === searchParams.range) ?? FUNNEL_RANGES[1];
+  const since = range.days ? new Date(Date.now() - range.days * 86_400_000).toISOString() : '1970-01-01T00:00:00Z';
+  const { data: funnelRows } = await supabase.rpc('admin_booking_funnel', { p_since: since });
   const studioId = await getStudioId(supabase);
 
   const [bookings, landingPages, upsellOrders] = await Promise.all([
@@ -28,7 +33,7 @@ export default async function StatsPage() {
 
   const landingPageIds = landingPages.map((lp) => lp.id);
   const { data: pageViews } = landingPageIds.length
-    ? await supabase.from('page_views').select('landing_page_id').in('landing_page_id', landingPageIds)
+    ? await supabase.from('page_views').select('landing_page_id').eq('event', 'view').in('landing_page_id', landingPageIds)
     : { data: [] as { landing_page_id: string }[] };
 
   const viewsByPage: Record<string, number> = {};
@@ -52,6 +57,8 @@ export default async function StatsPage() {
         <h1 className="text-xl font-semibold text-gray-900">Stats &amp; analytics</h1>
         <p className="text-sm text-gray-500">Deeper trends across revenue, locations, and conversion.</p>
       </div>
+
+      <FunnelCard rows={(funnelRows as FunnelRow[] | null) ?? []} landingPages={landingPages} range={range.key} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Page views (tracked pages)" value={String(totalViews)} />

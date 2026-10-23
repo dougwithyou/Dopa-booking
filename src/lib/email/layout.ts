@@ -62,6 +62,11 @@ export function detailsBlockHtml(rows: Array<[label: string, value: string]>): s
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${COLORS.parchment};border-left:3px solid ${COLORS.gold};border-radius:4px;padding:12px 16px;margin:16px 0;">${rowsHtml}</table>`;
 }
 
+/** Bulletproof-ish CTA button (table-based, inline styles) for email clients. */
+export function buttonHtml(label: string, href: string): string {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:20px 0;"><tr><td style="background-color:${COLORS.clay};border-radius:4px;"><a href="${escapeHtml(href)}" style="display:inline-block;padding:13px 26px;font-size:14px;font-weight:bold;letter-spacing:0.04em;color:#ffffff;text-decoration:none;">${escapeHtml(label)}</a></td></tr></table>`;
+}
+
 export function escapeHtml(input: string): string {
   return input
     .replace(/&/g, '&amp;')

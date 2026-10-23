@@ -22,6 +22,8 @@ const CreateHoldSchema = z.object({
   clientName: z.string().trim().min(1).max(200),
   clientEmail: z.string().trim().email().max(320),
   clientPhone: z.string().trim().max(50).nullish(),
+  // Visitor's language, used for the abandoned-cart email.
+  locale: z.enum(['en', 'es']).optional(),
 });
 
 /**
@@ -101,6 +103,7 @@ export async function POST(request: NextRequest) {
         client_name: payload.clientName,
         client_email: payload.clientEmail.toLowerCase(),
         client_phone: payload.clientPhone?.trim() || null,
+        locale: payload.locale ?? null,
         expires_at: expiresAt,
         released: false,
       })

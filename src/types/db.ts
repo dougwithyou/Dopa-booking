@@ -129,6 +129,17 @@ export type LandingPage = {
   updated_at: string;
 };
 
+/** One landing page's booking funnel (admin_booking_funnel, migration 0021). */
+export type FunnelRow = {
+  landing_page_id: string;
+  views: number;
+  unique_visitors: number;
+  book_clicks: number;
+  unique_clickers: number;
+  checkouts_started: number;
+  bookings: number;
+};
+
 /** A bookable slot as the public booking flow sees it (see migration 0015). */
 export type PublicSlot = {
   id: string;
@@ -157,6 +168,9 @@ export type Hold = {
   landing_page_id: string | null;
   expires_at: string;
   released: boolean;
+  /** Visitor's language at checkout, for the abandoned-cart email. */
+  locale: string | null;
+  abandoned_email_sent_at: string | null;
   created_at: string;
 };
 
@@ -264,6 +278,10 @@ export type PageView = {
   landing_page_id: string;
   promo_param: string | null;
   locale: string | null;
+  /** 'view' = landing page rendered, 'book_click' = booking flow opened. */
+  event: 'view' | 'book_click';
+  /** Anonymous random id from the visitor cookie, for unique counts. */
+  visitor_id: string | null;
   created_at: string;
 };
 
@@ -343,6 +361,10 @@ export interface Database {
       is_studio_admin: {
         Args: { p_studio_id: string };
         Returns: boolean;
+      };
+      admin_booking_funnel: {
+        Args: { p_since: string };
+        Returns: FunnelRow[];
       };
       public_slot_availability: {
         Args: { p_location_id: string; p_from: string; p_to: string };

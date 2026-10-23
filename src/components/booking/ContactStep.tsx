@@ -50,6 +50,7 @@ export function ContactStep({
           clientName: name.trim(),
           clientEmail: email.trim(),
           clientPhone: phone.trim(),
+          locale: document.documentElement.lang === 'es' ? 'es' : 'en',
         }),
       });
 

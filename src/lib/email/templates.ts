@@ -1,6 +1,6 @@
 import type { AvailabilitySlot, Booking, Client, Hold, LandingPage, Location, Locale } from '@/types/db';
 import { formatCurrency, formatSlotDateTime } from './format';
-import { detailsBlockHtml, escapeHtml, renderHtmlEmail } from './layout';
+import { buttonHtml, detailsBlockHtml, escapeHtml, renderHtmlEmail } from './layout';
 
 /** A paid extra (upsell order) bought together with the booking. */
 export interface BookingEmailExtra {
@@ -472,4 +472,109 @@ export function buildBookingCancellationEmail(params: {
   ].join('\n');
 
   return { subject: copy.subject(sessionType), html, text };
+}
+
+// ---------------------------------------------------------------------------
+// Abandoned checkout follow-up (client-facing, bilingual)
+// ---------------------------------------------------------------------------
+
+const abandonedCartCopy = {
+  en: {
+    subject: "You didn't finish your booking — there's still time",
+    heading: 'Still thinking it over?',
+    greeting: (name: string) => `Hi ${name},`,
+    intro:
+      "You started booking your photo session with us but didn't get to finish. There's still time — but spots fill up fast, especially this season.",
+    sessionLabel: 'Session',
+    pickedLabel: 'You had picked',
+    pickedNote: 'That time may have been taken since — if so, just choose another one.',
+    cta: 'Finish my booking',
+    discount: (code: string) => `Your discount code ${code} is still active.`,
+    closing: 'Questions before booking? Just reply to this email and we\'ll help.',
+    optOut: "If you're no longer interested, simply ignore this email — we won't write to you about it again.",
+    signoff: '— Doug & Paola, Dopa Studio',
+  },
+  es: {
+    subject: 'No terminaste tu reserva — aún estás a tiempo',
+    heading: '¿Todavía lo estás pensando?',
+    greeting: (name: string) => `Hola ${name},`,
+    intro:
+      'Empezaste a reservar tu sesión de fotos con nosotros pero no llegaste a terminar. Aún estás a tiempo, pero los cupos se llenan rápido, sobre todo en esta temporada.',
+    sessionLabel: 'Sesión',
+    pickedLabel: 'Habías elegido',
+    pickedNote: 'Puede que ese horario ya se haya ocupado; si es así, elige otro.',
+    cta: 'Terminar mi reserva',
+    discount: (code: string) => `Tu código de descuento ${code} sigue activo.`,
+    closing: '¿Tienes dudas antes de reservar? Responde a este correo y con gusto te ayudamos.',
+    optOut: 'Si ya no te interesa, simplemente ignora este correo; no volveremos a escribirte sobre esta reserva.',
+    signoff: '— Doug & Paola, Dopa Studio',
+  },
+} satisfies Record<Locale, {
+  subject: string;
+  heading: string;
+  greeting: (name: string) => string;
+  intro: string;
+  sessionLabel: string;
+  pickedLabel: string;
+  pickedNote: string;
+  cta: string;
+  discount: (code: string) => string;
+  closing: string;
+  optOut: string;
+  signoff: string;
+}>;
+
+export function buildAbandonedCartEmail(params: {
+  clientName: string | null;
+  landingPage: LandingPage;
+  location: Location | null;
+  slot: AvailabilitySlot | null;
+  locale: Locale;
+  bookUrl: string;
+  discountCode: string | null;
+}): EmailContent {
+  const { landingPage, location, slot, locale, bookUrl, discountCode } = params;
+  const copy = abandonedCartCopy[locale];
+  // The page's eyebrow ("Sesiones de Navidad") names the session best; the
+  // headline is marketing copy. Strip the **duo** markers either way.
+  const eyebrow = (locale === 'es' ? landingPage.eyebrow_es : landingPage.eyebrow_en)?.trim();
+  const sessionType = (eyebrow || sessionTypeLabel(landingPage, locale)).replace(/\*\*/g, '');
+  const name = params.clientName?.trim() || (locale === 'es' ? 'allí' : 'there');
+  const picked = slot ? `${dateTimeLine(slot, locale)}${location ? ` — ${location.name}` : ''}` : null;
+
+  const html = renderHtmlEmail({
+    preheading: copy.subject,
+    heading: copy.heading,
+    bodyHtml: `
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.greeting(name))}</p>
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.intro)}</p>
+      ${detailsBlockHtml([[copy.sessionLabel, sessionType], ...(picked ? ([[copy.pickedLabel, picked]] as Array<[string, string]>) : [])])}
+      ${picked ? `<p style="margin:0 0 4px;font-size:13px;line-height:1.5;color:#7a7168;">${escapeHtml(copy.pickedNote)}</p>` : ''}
+      ${discountCode ? `<p style="margin:12px 0 0;font-size:15px;line-height:1.5;font-weight:bold;">${escapeHtml(copy.discount(discountCode))}</p>` : ''}
+      ${buttonHtml(copy.cta, bookUrl)}
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.closing)}</p>
+      <p style="margin:16px 0 0;font-size:15px;line-height:1.5;">${copy.signoff}</p>
+      <p style="margin:20px 0 0;font-size:12px;line-height:1.5;color:#7a7168;">${escapeHtml(copy.optOut)}</p>
+    `,
+  });
+
+  const text = [
+    copy.greeting(name),
+    '',
+    copy.intro,
+    '',
+    `${copy.sessionLabel}: ${sessionType}`,
+    ...(picked ? [`${copy.pickedLabel}: ${picked}`, copy.pickedNote] : []),
+    ...(discountCode ? ['', copy.discount(discountCode)] : []),
+    '',
+    `${copy.cta}: ${bookUrl}`,
+    '',
+    copy.closing,
+    '',
+    copy.signoff,
+    '',
+    copy.optOut,
+  ].join('\n');
+
+  return { subject: copy.subject, html, text };
 }

@@ -1,3 +1,5 @@
+import { cookies } from 'next/headers';
+import { VISITOR_COOKIE } from '@/lib/analytics/visitor';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -85,6 +87,8 @@ export default async function LandingSlugPage({
       landing_page_id: page.id,
       promo_param: searchParams?.promo ?? null,
       locale,
+      event: 'view',
+      visitor_id: cookies().get(VISITOR_COOKIE)?.value ?? null,
     });
   } catch {
     // non-critical

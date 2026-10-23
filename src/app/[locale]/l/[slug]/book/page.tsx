@@ -1,3 +1,5 @@
+import { cookies } from 'next/headers';
+import { VISITOR_COOKIE } from '@/lib/analytics/visitor';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { adminDb, applyDiscount, resolveDiscountCode } from '@/app/api/_lib/payments';
@@ -39,6 +41,19 @@ export default async function BookPage({
   }
 
   const promo = searchParams?.promo ?? null;
+
+  // Funnel stat: someone opened the booking flow ("Book now" click).
+  try {
+    await supabase.from('page_views').insert({
+      landing_page_id: page.id,
+      promo_param: promo,
+      locale,
+      event: 'book_click',
+      visitor_id: cookies().get(VISITOR_COOKIE)?.value ?? null,
+    });
+  } catch {
+    // non-critical
+  }
 
   return (
     <BookingFlow

@@ -3,6 +3,7 @@ import createIntlMiddleware from 'next-intl/middleware';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { routing } from '@/i18n/routing';
 import type { Database } from '@/types/db';
+import { VISITOR_COOKIE, VISITOR_COOKIE_MAX_AGE } from '@/lib/analytics/visitor';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -62,7 +63,18 @@ export default async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/admin')) {
     return handleAdmin(request);
   }
-  return intlMiddleware(request);
+  const response = intlMiddleware(request);
+  // Anonymous visitor id for unique-visitor stats (random, no personal data).
+  if (!request.cookies.get(VISITOR_COOKIE)) {
+    response.cookies.set(VISITOR_COOKIE, crypto.randomUUID(), {
+      maxAge: VISITOR_COOKIE_MAX_AGE,
+      sameSite: 'lax',
+      secure: true,
+      httpOnly: true,
+      path: '/',
+    });
+  }
+  return response;
 }
 
 export const config = {
