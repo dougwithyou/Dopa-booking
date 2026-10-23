@@ -183,6 +183,12 @@ export async function LandingPageView({
         body={closerBody}
         ticket={ticket}
         price={price}
+        included={{
+          title: t('closer.includedTitle'),
+          items: (page.included_items ?? [])
+            .map((item) => pickText(locale, item.en, item.es))
+            .filter((text) => text.trim() !== ''),
+        }}
         ctaHref={bookHref}
         ctaLabel={t('closer.cta')}
       />

@@ -38,7 +38,8 @@
       "cta": "Reservar mi fecha ahora",
       "useCode": "Usa el código",
       "priceUpTo": "Sesión para hasta {count} personas",
-      "priceExtraPerson": "+ {price} por persona adicional"
+      "priceExtraPerson": "+ {price} por persona adicional",
+      "includedTitle": "Qué incluye"
     },
     "footer": {
       "tagline": "hidopastudio.com · @hidopastudio · Washington DC / MD / VA"

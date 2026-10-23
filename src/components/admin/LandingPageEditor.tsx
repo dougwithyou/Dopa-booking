@@ -2,18 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowDown, ArrowUp, Crosshair, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Crosshair, Plus, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import type {
-  DiscountCode,
-  GalleryPhoto,
-  LandingPage,
-  LandingPageSectionKey,
-  LandingPageStatus,
-  LandingPageTheme,
-  Location,
-  Product,
-} from '@/types/db';
+import type { DiscountCode, GalleryPhoto, LandingPage, LandingPageSectionKey, LandingPageStatus, LandingPageTheme, Location, Product, IncludedItem } from '@/types/db';
 import { SECTION_LABELS, resolveSectionOrder } from '@/lib/landing/sections';
 import { DEFAULT_THEME_COLORS, THEME_COLOR_LABELS, THEME_PRESETS } from '@/lib/landing/theme';
 import ImageUploadCrop from './ImageUploadCrop';
@@ -95,6 +86,7 @@ interface EditorState {
   gallery: GalleryPhoto[];
   base_price: string;
   show_price: boolean;
+  included_items: IncludedItem[];
   included_people: string;
   extra_person_price: string;
   max_people: string;
@@ -140,6 +132,7 @@ function fromPage(p: LandingPage): EditorState {
     gallery: [...(p.gallery ?? [])].sort((a, b) => a.order - b.order),
     base_price: centsToDollarsInput(p.base_price_cents),
     show_price: p.show_price ?? true,
+    included_items: p.included_items ?? [],
     included_people: String(p.included_people ?? 5),
     extra_person_price: centsToDollarsInput(p.extra_person_price_cents ?? 3000),
     max_people: String(p.max_people ?? 12),
@@ -395,6 +388,9 @@ export default function LandingPageEditor({
         gallery: state.gallery,
         base_price_cents: state.base_price ? dollarsInputToCents(state.base_price) : null,
         show_price: state.show_price,
+        included_items: state.included_items
+          .map((item) => ({ en: item.en.trim(), es: item.es.trim() }))
+          .filter((item) => item.en || item.es),
         included_people: Math.max(1, parseInt(state.included_people, 10) || 1),
         extra_person_price_cents: dollarsInputToCents(state.extra_person_price || '0'),
         max_people: Math.max(
@@ -829,6 +825,58 @@ export default function LandingPageEditor({
             ))}
           </select>
         </div>
+      </div>
+
+      <div className={`${cardCls} space-y-3`}>
+        <div>
+          <h2 className="text-sm font-semibold text-gray-900">What&apos;s included</h2>
+          <p className="mt-0.5 text-xs text-gray-500">
+            Shown as a checklist on the price ticket at the end of the page (e.g. &ldquo;30-minute session&rdquo;).
+          </p>
+        </div>
+        {state.included_items.map((item, idx) => (
+          <div key={idx} className="flex items-start gap-2">
+            <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
+              <input
+                className={inputCls}
+                placeholder="English"
+                value={item.en}
+                onChange={(e) =>
+                  set(
+                    'included_items',
+                    state.included_items.map((it, i) => (i === idx ? { ...it, en: e.target.value } : it))
+                  )
+                }
+              />
+              <input
+                className={inputCls}
+                placeholder="Español"
+                value={item.es}
+                onChange={(e) =>
+                  set(
+                    'included_items',
+                    state.included_items.map((it, i) => (i === idx ? { ...it, es: e.target.value } : it))
+                  )
+                }
+              />
+            </div>
+            <button
+              type="button"
+              className={btnDanger}
+              aria-label="Remove item"
+              onClick={() => set('included_items', state.included_items.filter((_, i) => i !== idx))}
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className={btnSecondary}
+          onClick={() => set('included_items', [...state.included_items, { en: '', es: '' }])}
+        >
+          <Plus className="h-4 w-4" /> Add item
+        </button>
       </div>
 
       <div className={`${cardCls} space-y-3`}>

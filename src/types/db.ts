@@ -47,6 +47,9 @@ export type Location = {
 /** Point of a photo (percent of width / height, 0-100) to keep in frame when it's cropped to fit. */
 export type FocalPoint = { x: number; y: number };
 
+/** One bullet of a landing page's "What's included" list. */
+export type IncludedItem = { en: string; es: string };
+
 export type GalleryPhoto = {
   url: string;
   tag_en: string;
@@ -117,6 +120,8 @@ export type LandingPage = {
   /** People covered by base_price_cents; each extra person adds extra_person_price_cents. */
   /** Show the session price on the landing page's closer ticket. */
   show_price: boolean;
+  /** "What's included" bullets shown on the closer ticket. */
+  included_items: IncludedItem[];
   included_people: number;
   extra_person_price_cents: number;
   max_people: number;

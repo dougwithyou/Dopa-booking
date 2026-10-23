@@ -38,7 +38,8 @@
       "cta": "Book my date now",
       "useCode": "Use code",
       "priceUpTo": "Session for up to {count} people",
-      "priceExtraPerson": "+ {price} per additional person"
+      "priceExtraPerson": "+ {price} per additional person",
+      "includedTitle": "What's included"
     },
     "footer": {
       "tagline": "hidopastudio.com · @hidopastudio · Washington DC / MD / VA"

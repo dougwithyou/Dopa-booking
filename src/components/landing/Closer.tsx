@@ -9,6 +9,24 @@ export interface CloserPrice {
   extraLine: string | null;
 }
 
+function IncludedList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="text-left">
+      <div className="mb-2 text-center font-body text-[11px] font-semibold uppercase tracking-[0.18em] text-ink/60">
+        {title}
+      </div>
+      <ul className="space-y-1.5">
+        {items.map((item, i) => (
+          <li key={i} className="flex gap-2.5 font-body text-sm leading-snug text-ink/80">
+            <span aria-hidden className="mt-[3px] text-clay">✓</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function PriceBlock({ price }: { price: CloserPrice }) {
   return (
     <div>
@@ -31,6 +49,7 @@ export function Closer({
   body,
   ticket,
   price,
+  included,
   ctaHref,
   ctaLabel,
 }: {
@@ -49,6 +68,8 @@ export function Closer({
   } | null;
   /** Session price block; null when hidden or no price is set. */
   price: CloserPrice | null;
+  /** "What's included" bullets (already localized); empty hides the list. */
+  included: { title: string; items: string[] };
   ctaHref: string;
   ctaLabel: string;
 }) {
@@ -75,6 +96,12 @@ export function Closer({
               <PriceBlock price={price} />
             </>
           )}
+          {included.items.length > 0 && (
+            <>
+              <div className="my-5 border-t border-dashed border-[var(--line)]" />
+              <IncludedList title={included.title} items={included.items} />
+            </>
+          )}
           {ticket.expiresAt && (
             <Countdown
               expiresAt={ticket.expiresAt}
@@ -86,9 +113,11 @@ export function Closer({
         </div>
       )}
 
-      {!ticket && price && (
+      {!ticket && (price || included.items.length > 0) && (
         <div className="mx-auto max-w-[420px] rounded-sm bg-parchment px-[26px] py-[28px] text-ink">
-          <PriceBlock price={price} />
+          {price && <PriceBlock price={price} />}
+          {price && included.items.length > 0 && <div className="my-5 border-t border-dashed border-[var(--line)]" />}
+          {included.items.length > 0 && <IncludedList title={included.title} items={included.items} />}
         </div>
       )}
 
