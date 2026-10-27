@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { adminDb, applyDiscount, resolveDiscountCode } from '@/app/api/_lib/payments';
 import { BookingFlow, type CheckoutOffer } from '@/components/booking/BookingFlow';
+import { MetaPixel } from '@/components/landing/MetaPixel';
 import type { AppLocale } from '@/i18n/routing';
 import type { LandingPage, Location, Product } from '@/types/db';
 
@@ -55,15 +56,35 @@ export default async function BookPage({
     // non-critical
   }
 
+  const offer = await loadCheckoutOffer(page as LandingPage, promo);
+  const { data: studio } = await supabase.from('studios').select('meta_pixel_id').eq('id', page.studio_id).maybeSingle();
+  const pixelId = page.meta_pixel_id || studio?.meta_pixel_id || null;
+
   return (
-    <BookingFlow
+    <>
+      <MetaPixel
+        pixelId={pixelId}
+        events={[
+          {
+            name: 'InitiateCheckout',
+            params: {
+              value: Number((offer.sessionCents / 100).toFixed(2)),
+              currency: offer.currency.toUpperCase(),
+              content_ids: [page.id],
+              content_type: 'product',
+            },
+          },
+        ]}
+      />
+      <BookingFlow
       locale={locale as AppLocale}
       slug={slug}
       landingPageId={page.id}
       locations={locations}
       initialPromo={promo}
-      offer={await loadCheckoutOffer(page as LandingPage, promo)}
-    />
+      offer={offer}
+      />
+    </>
   );
 }
 

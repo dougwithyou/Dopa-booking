@@ -1,5 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { UpsellGrid } from '@/components/booking/UpsellGrid';
+import { MetaPixel } from '@/components/landing/MetaPixel';
+import { purchasePixel } from '@/lib/booking/pixel';
 import type { AppLocale } from '@/i18n/routing';
 
 /**
@@ -28,8 +30,13 @@ export default async function UpsellPage({
     .eq('is_active', true)
     .order('created_at', { ascending: true });
 
+  // Stripe's success page when no extras were added at checkout: report the
+  // purchase here (deduped with the confirmation page by eventID + session).
+  const pixel = await purchasePixel(bookingId);
+
   return (
     <main className="min-h-screen bg-parchment px-[6vw] py-16">
+      {pixel && <MetaPixel pixelId={pixel.pixelId} events={pixel.events} />}
       <UpsellGrid locale={locale as AppLocale} bookingId={bookingId} products={products ?? []} />
     </main>
   );
