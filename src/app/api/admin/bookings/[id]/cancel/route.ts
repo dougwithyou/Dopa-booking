@@ -140,6 +140,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       .update({ status: 'cancelled', refunded_at: now })
       .in('id', paidOrders.map((o) => o.id));
   }
+  // A booking created by an invoice: the invoice is no longer payable.
+  if (booking.invoice_id) {
+    await db.from('invoices').update({ status: 'void' }).eq('id', booking.invoice_id).neq('status', 'void');
+  }
   // Drop any still-pending extras from an abandoned checkout.
   await db.from('upsell_orders').update({ status: 'cancelled' }).eq('booking_id', booking.id).eq('status', 'pending');
 

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import type Stripe from 'stripe';
 import { APP_METADATA_KEY, APP_METADATA_VALUE, getStripe } from '@/lib/stripe';
+import { markInvoicePaid } from '@/lib/invoices/server';
 import type { Locale } from '@/types/db';
 import {
   adminDb,
@@ -111,6 +112,21 @@ async function handleSessionCompleted(
   session: Stripe.Checkout.Session
 ): Promise<void> {
   const type = metadataString(session.metadata, 'type');
+
+  // Invoices (admin-issued bills) are keyed by invoiceId, not bookingId.
+  if (type === 'invoice') {
+    const invoiceId = metadataString(session.metadata, 'invoiceId');
+    if (!invoiceId) return;
+    if (session.payment_status === 'unpaid') return; // wait for async_payment_succeeded
+    const { alreadyPaid } = await markInvoicePaid(db, invoiceId, {
+      method: 'stripe',
+      paymentIntentId: paymentIntentId(session),
+      checkoutSessionId: session.id,
+    });
+    console.info('[stripe-webhook] invoice paid', { invoiceId, alreadyPaid });
+    return;
+  }
+
   const bookingId =
     metadataString(session.metadata, 'bookingId') ?? session.client_reference_id ?? undefined;
 
@@ -233,6 +249,9 @@ async function handleSessionExpired(
   session: Stripe.Checkout.Session
 ): Promise<void> {
   const type = metadataString(session.metadata, 'type');
+  // An abandoned invoice payment changes nothing: the invoice stays payable
+  // and its booking keeps the slot until the admin voids it.
+  if (type === 'invoice') return;
   const bookingId =
     metadataString(session.metadata, 'bookingId') ?? session.client_reference_id ?? undefined;
   if (!bookingId) return;

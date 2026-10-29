@@ -57,6 +57,16 @@ export default async function EditBookingPage({ params }: { params: { id: string
             <dt className="text-xs uppercase tracking-wide text-gray-500">Session type</dt>
             <dd className="text-gray-900">{landingPageLabel(landingPage)}</dd>
           </div>
+          {booking.invoice_id && (
+            <div>
+              <dt className="text-xs uppercase tracking-wide text-gray-500">Invoice</dt>
+              <dd>
+                <Link href={`/admin/invoices/${booking.invoice_id}`} className="text-gray-900 underline-offset-4 hover:underline">
+                  View invoice
+                </Link>
+              </dd>
+            </div>
+          )}
           <div>
             <dt className="text-xs uppercase tracking-wide text-gray-500">People</dt>
             <dd className="text-gray-900">

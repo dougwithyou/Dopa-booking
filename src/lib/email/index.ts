@@ -1,10 +1,13 @@
 import 'server-only';
-import type { AvailabilitySlot, Booking, Client, Hold, LandingPage, Location, Locale } from '@/types/db';
+import type { AvailabilitySlot, Booking, Client, Hold, Invoice, LandingPage, Location, Locale } from '@/types/db';
 import { sendEmailSafe } from './client';
 import { resolveLocale } from './format';
 import {
   type BookingEmailExtra,
   buildAbandonedCartEmail,
+  buildAdminInvoicePaidEmail,
+  buildInvoiceEmail,
+  buildInvoicePaidEmail,
   buildAdminBookingNotificationEmail,
   buildBookingCancellationEmail,
   buildBookingConfirmationEmail,
@@ -131,4 +134,25 @@ export async function sendAbandonedCartEmail(params: {
   const { to, ...rest } = params;
   const content = buildAbandonedCartEmail({ ...rest, locale: resolveLocale(params.locale) });
   await sendEmailSafe({ to, content });
+}
+
+/** Sends an invoice with its "View & pay" link. Returns whether it was attempted. */
+export async function sendInvoiceEmail(params: {
+  invoice: Invoice;
+  location: Location | null;
+  slot: AvailabilitySlot | null;
+  payUrl: string;
+}): Promise<void> {
+  await sendEmailSafe({ to: params.invoice.client_email, content: buildInvoiceEmail(params) });
+}
+
+/** Client receipt + admin notification once an invoice is paid. */
+export async function sendInvoicePaidEmails(params: {
+  invoice: Invoice;
+  location: Location | null;
+  slot: AvailabilitySlot | null;
+}): Promise<void> {
+  await sendEmailSafe({ to: params.invoice.client_email, content: buildInvoicePaidEmail(params) });
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  if (adminEmail) await sendEmailSafe({ to: adminEmail, content: buildAdminInvoicePaidEmail(params) });
 }

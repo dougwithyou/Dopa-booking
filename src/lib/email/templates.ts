@@ -1,4 +1,5 @@
-import type { AvailabilitySlot, Booking, Client, Hold, LandingPage, Location, Locale } from '@/types/db';
+import type { AvailabilitySlot, Booking, Client, Hold, Invoice, LandingPage, Location, Locale } from '@/types/db';
+import { invoiceNumberLabel, lineTotalCents, subtotalCents } from '@/lib/invoices/totals';
 import { formatCurrency, formatSlotDateTime } from './format';
 import { buttonHtml, detailsBlockHtml, escapeHtml, renderHtmlEmail } from './layout';
 
@@ -577,4 +578,183 @@ export function buildAbandonedCartEmail(params: {
   ].join('\n');
 
   return { subject: copy.subject, html, text };
+}
+
+// ---------------------------------------------------------------------------
+// Invoices (client-facing, bilingual) + admin "invoice paid" notification
+// ---------------------------------------------------------------------------
+
+const invoiceCopy = {
+  en: {
+    subject: (num: string) => `Invoice ${num} from Dopa Studio`,
+    heading: (num: string) => `Invoice ${num}`,
+    greeting: (name: string) => `Hi ${name},`,
+    intro: "Here are the details of your photo session. You can review everything and pay securely online.",
+    session: 'Session',
+    location: 'Location',
+    when: 'Date & time',
+    due: 'Due',
+    discount: 'Discount',
+    total: 'Total',
+    cta: 'View & pay invoice',
+    slotNote: 'Your date is reserved for you while this invoice is pending.',
+    closing: "Questions? Just reply to this email and we'll help.",
+    paidSubject: (num: string) => `Payment received — Invoice ${num}`,
+    paidHeading: 'Thank you! Your payment is confirmed',
+    paidIntro: 'We received your payment. Your session is confirmed — see you soon!',
+    paidLabel: 'Amount paid',
+    signoff: '— Doug & Paola, Dopa Studio',
+  },
+  es: {
+    subject: (num: string) => `Factura ${num} de Dopa Studio`,
+    heading: (num: string) => `Factura ${num}`,
+    greeting: (name: string) => `Hola ${name},`,
+    intro: 'Aquí tienes los detalles de tu sesión de fotos. Puedes revisarlo todo y pagar de forma segura en línea.',
+    session: 'Sesión',
+    location: 'Ubicación',
+    when: 'Fecha y hora',
+    due: 'Vence',
+    discount: 'Descuento',
+    total: 'Total',
+    cta: 'Ver y pagar factura',
+    slotNote: 'Tu fecha queda reservada para ti mientras esta factura esté pendiente.',
+    closing: '¿Tienes preguntas? Responde a este correo y con gusto te ayudamos.',
+    paidSubject: (num: string) => `Pago recibido — Factura ${num}`,
+    paidHeading: '¡Gracias! Tu pago está confirmado',
+    paidIntro: 'Recibimos tu pago. Tu sesión está confirmada — ¡nos vemos pronto!',
+    paidLabel: 'Monto pagado',
+    signoff: '— Doug & Paola, Dopa Studio',
+  },
+} as const;
+
+function formatDueDate(date: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale === 'es' ? 'es-US' : 'en-US', {
+    dateStyle: 'long',
+    timeZone: 'UTC',
+  }).format(new Date(`${date}T00:00:00Z`));
+}
+
+function invoiceRows(
+  invoice: Invoice,
+  location: Location | null,
+  slot: AvailabilitySlot | null,
+  locale: Locale
+): { details: Array<[string, string]>; lines: Array<[string, string]> } {
+  const copy = invoiceCopy[locale];
+  const details: Array<[string, string]> = [[copy.session, invoice.title]];
+  if (slot) {
+    details.push([copy.when, dateTimeLine(slot, locale)]);
+    details.push([copy.location, locationLine(location, locale)]);
+  }
+  if (invoice.due_date) details.push([copy.due, formatDueDate(invoice.due_date, locale)]);
+
+  const lines: Array<[string, string]> = invoice.items.map((item) => [
+    item.quantity > 1 ? `${item.description} × ${item.quantity}` : item.description,
+    formatCurrency(lineTotalCents(item), invoice.currency, locale),
+  ]);
+  if (invoice.discount_cents > 0 && subtotalCents(invoice.items) > 0) {
+    lines.push([copy.discount, `−${formatCurrency(invoice.discount_cents, invoice.currency, locale)}`]);
+  }
+  lines.push([copy.total, formatCurrency(invoice.total_cents, invoice.currency, locale)]);
+  return { details, lines };
+}
+
+export function buildInvoiceEmail(params: {
+  invoice: Invoice;
+  location: Location | null;
+  slot: AvailabilitySlot | null;
+  payUrl: string;
+}): EmailContent {
+  const { invoice, location, slot, payUrl } = params;
+  const locale = invoice.locale;
+  const copy = invoiceCopy[locale];
+  const num = invoiceNumberLabel(invoice.number);
+  const name = invoice.client_name?.trim() || (locale === 'es' ? 'allí' : 'there');
+  const { details, lines } = invoiceRows(invoice, location, slot, locale);
+
+  const html = renderHtmlEmail({
+    preheading: copy.intro,
+    heading: copy.heading(num),
+    bodyHtml: `
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.greeting(name))}</p>
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.intro)}</p>
+      ${detailsBlockHtml(details)}
+      ${detailsBlockHtml(lines)}
+      ${invoice.notes ? `<p style="margin:0 0 12px;font-size:14px;line-height:1.5;white-space:pre-line;">${escapeHtml(invoice.notes)}</p>` : ''}
+      ${buttonHtml(copy.cta, payUrl)}
+      ${slot ? `<p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:#7a7168;">${escapeHtml(copy.slotNote)}</p>` : ''}
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.closing)}</p>
+      <p style="margin:16px 0 0;font-size:15px;line-height:1.5;">${copy.signoff}</p>
+    `,
+  });
+  const text = [
+    copy.greeting(name),
+    '',
+    copy.intro,
+    '',
+    ...details.map(([l, v]) => `${l}: ${v}`),
+    '',
+    ...lines.map(([l, v]) => `${l}: ${v}`),
+    ...(invoice.notes ? ['', invoice.notes] : []),
+    '',
+    `${copy.cta}: ${payUrl}`,
+    ...(slot ? ['', copy.slotNote] : []),
+    '',
+    copy.closing,
+    '',
+    copy.signoff,
+  ].join('\n');
+  return { subject: copy.subject(num), html, text };
+}
+
+export function buildInvoicePaidEmail(params: {
+  invoice: Invoice;
+  location: Location | null;
+  slot: AvailabilitySlot | null;
+}): EmailContent {
+  const { invoice, location, slot } = params;
+  const locale = invoice.locale;
+  const copy = invoiceCopy[locale];
+  const num = invoiceNumberLabel(invoice.number);
+  const name = invoice.client_name?.trim() || (locale === 'es' ? 'allí' : 'there');
+  const { details } = invoiceRows({ ...invoice, due_date: null }, location, slot, locale);
+  details.push([copy.paidLabel, formatCurrency(invoice.total_cents, invoice.currency, locale)]);
+
+  const html = renderHtmlEmail({
+    preheading: copy.paidIntro,
+    heading: copy.paidHeading,
+    bodyHtml: `
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.greeting(name))}</p>
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.paidIntro)}</p>
+      ${detailsBlockHtml(details)}
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.closing)}</p>
+      <p style="margin:16px 0 0;font-size:15px;line-height:1.5;">${copy.signoff}</p>
+    `,
+  });
+  const text = [copy.greeting(name), '', copy.paidIntro, '', ...details.map(([l, v]) => `${l}: ${v}`), '', copy.closing, '', copy.signoff].join('\n');
+  return { subject: copy.paidSubject(num), html, text };
+}
+
+export function buildAdminInvoicePaidEmail(params: {
+  invoice: Invoice;
+  location: Location | null;
+  slot: AvailabilitySlot | null;
+}): EmailContent {
+  const { invoice, location, slot } = params;
+  const num = invoiceNumberLabel(invoice.number);
+  const amount = formatCurrency(invoice.total_cents, invoice.currency, 'en');
+  const who = invoice.client_name?.trim() || invoice.client_email;
+  const summary = `Invoice ${num} paid: ${who}, ${amount}`;
+  const rows: Array<[string, string]> = [
+    ['Client', `${who} (${invoice.client_email}${invoice.client_phone ? `, ${invoice.client_phone}` : ''})`],
+    ['Invoice', `${num} — ${invoice.title}`],
+    ...(slot ? ([['When', formatSlotDateTime(slot.start_time, 'en')]] as Array<[string, string]>) : []),
+    ...(location ? ([['Location', location.name]] as Array<[string, string]>) : []),
+    ['Amount', amount],
+  ];
+  const html = renderHtmlEmail({
+    heading: 'Invoice paid',
+    bodyHtml: `<p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(summary)}</p>${detailsBlockHtml(rows)}`,
+  });
+  return { subject: summary, html, text: [summary, '', ...rows.map(([l, v]) => `${l}: ${v}`)].join('\n') };
 }

@@ -17,6 +17,7 @@ import {
   X,
   PackageCheck,
   FileSignature,
+  Receipt,
 } from 'lucide-react';
 import SignOutButton from './SignOutButton';
 
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { href: '/admin/discount-codes', label: 'Discount Codes', icon: Tag },
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/orders', label: 'Orders', icon: PackageCheck },
+  { href: '/admin/invoices', label: 'Invoices', icon: Receipt },
   { href: '/admin/contracts', label: 'Contracts', icon: FileSignature },
   { href: '/admin/crm', label: 'CRM', icon: Users },
   { href: '/admin/stats', label: 'Stats', icon: BarChart3 },

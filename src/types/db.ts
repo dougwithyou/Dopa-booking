@@ -229,6 +229,43 @@ export type Product = {
 };
 
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled';
+
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void';
+
+/** One line of an invoice; amounts in cents. */
+export type InvoiceItem = { description: string; quantity: number; unit_cents: number };
+
+export type Invoice = {
+  id: string;
+  studio_id: string;
+  /** Sequential per studio, shown as #0001. */
+  number: number;
+  /** Secret for the public pay link /[locale]/invoice/[token]. */
+  token: string;
+  client_id: string | null;
+  client_name: string | null;
+  client_email: string;
+  client_phone: string | null;
+  /** The booking reserving the slot (pending until paid). */
+  booking_id: string | null;
+  location_id: string | null;
+  slot_id: string | null;
+  title: string;
+  notes: string | null;
+  items: InvoiceItem[];
+  discount_cents: number;
+  total_cents: number;
+  currency: string;
+  status: InvoiceStatus;
+  due_date: string | null;
+  locale: Locale;
+  stripe_checkout_session_id: string | null;
+  stripe_payment_intent_id: string | null;
+  sent_at: string | null;
+  paid_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
 export type PaymentMethod = 'stripe' | 'cash' | 'other';
 
 export type Booking = {
@@ -256,6 +293,8 @@ export type Booking = {
   stripe_refund_id: string | null;
   source_promo_param: string | null;
   admin_note: string | null;
+  /** Set when the booking was created by an invoice. */
+  invoice_id: string | null;
   created_by_admin: boolean;
   created_at: string;
   updated_at: string;
@@ -356,6 +395,7 @@ export interface Database {
       upsell_orders: { Row: UpsellOrder; Insert: Partial<UpsellOrder>; Update: Partial<UpsellOrder>; Relationships: Relationships };
       page_views: { Row: PageView; Insert: Partial<PageView>; Update: Partial<PageView>; Relationships: Relationships };
       contracts: { Row: Contract; Insert: Partial<Contract>; Update: Partial<Contract>; Relationships: Relationships };
+      invoices: { Row: Invoice; Insert: Partial<Invoice>; Update: Partial<Invoice>; Relationships: Relationships };
     };
     Views: Record<string, never>;
     Functions: {
