@@ -758,3 +758,58 @@ export function buildAdminInvoicePaidEmail(params: {
   });
   return { subject: summary, html, text: [summary, '', ...rows.map(([l, v]) => `${l}: ${v}`)].join('\n') };
 }
+
+// ---------------------------------------------------------------------------
+// Booking rescheduled by the studio (client-facing, bilingual)
+// ---------------------------------------------------------------------------
+
+const rescheduleCopy = {
+  en: {
+    subject: 'Your session has a new date — Dopa Studio',
+    heading: 'Your session was rescheduled',
+    greeting: (name: string) => `Hi ${name},`,
+    intro: 'Your photo session has been moved. Here are the updated details:',
+    labels: { when: 'New date & time', location: 'Location', before: 'Previously' },
+    closing: "If this doesn't work for you, just reply to this email and we'll sort it out.",
+    signoff: '— Doug & Paola, Dopa Studio',
+  },
+  es: {
+    subject: 'Tu sesión tiene nueva fecha — Dopa Studio',
+    heading: 'Tu sesión fue reprogramada',
+    greeting: (name: string) => `Hola ${name},`,
+    intro: 'Movimos tu sesión de fotos. Estos son los nuevos detalles:',
+    labels: { when: 'Nueva fecha y hora', location: 'Ubicación', before: 'Antes' },
+    closing: 'Si no te funciona, responde a este correo y lo resolvemos.',
+    signoff: '— Doug & Paola, Dopa Studio',
+  },
+} as const;
+
+export function buildBookingRescheduledEmail(params: {
+  clientName: string | null;
+  location: Location | null;
+  slot: AvailabilitySlot;
+  previousSlot: AvailabilitySlot | null;
+  locale: Locale;
+}): EmailContent {
+  const { location, slot, previousSlot, locale } = params;
+  const copy = rescheduleCopy[locale];
+  const name = params.clientName?.trim() || (locale === 'es' ? 'allí' : 'there');
+  const rows: Array<[string, string]> = [
+    [copy.labels.when, dateTimeLine(slot, locale)],
+    [copy.labels.location, locationLine(location, locale)],
+    ...(previousSlot ? ([[copy.labels.before, dateTimeLine(previousSlot, locale)]] as Array<[string, string]>) : []),
+  ];
+  const html = renderHtmlEmail({
+    preheading: copy.intro,
+    heading: copy.heading,
+    bodyHtml: `
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.greeting(name))}</p>
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.intro)}</p>
+      ${detailsBlockHtml(rows)}
+      <p style="margin:16px 0 4px;font-size:15px;line-height:1.5;">${escapeHtml(copy.closing)}</p>
+      <p style="margin:16px 0 0;font-size:15px;line-height:1.5;">${copy.signoff}</p>
+    `,
+  });
+  const text = [copy.greeting(name), '', copy.intro, '', ...rows.map(([l, v]) => `${l}: ${v}`), '', copy.closing, '', copy.signoff].join('\n');
+  return { subject: copy.subject, html, text };
+}

@@ -10,6 +10,7 @@ import {
   buildInvoicePaidEmail,
   buildAdminBookingNotificationEmail,
   buildBookingCancellationEmail,
+  buildBookingRescheduledEmail,
   buildBookingConfirmationEmail,
   buildContractSignedNotificationEmail,
   buildHoldExpirationReminderEmail,
@@ -155,4 +156,17 @@ export async function sendInvoicePaidEmails(params: {
   await sendEmailSafe({ to: params.invoice.client_email, content: buildInvoicePaidEmail(params) });
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
   if (adminEmail) await sendEmailSafe({ to: adminEmail, content: buildAdminInvoicePaidEmail(params) });
+}
+
+/** Tells the client their session moved to a new date/time. Fails soft. */
+export async function sendBookingRescheduled(params: {
+  to: string;
+  clientName: string | null;
+  location: Location | null;
+  slot: AvailabilitySlot;
+  previousSlot: AvailabilitySlot | null;
+  locale: Locale;
+}): Promise<void> {
+  const { to, ...rest } = params;
+  await sendEmailSafe({ to, content: buildBookingRescheduledEmail({ ...rest, locale: resolveLocale(params.locale) }) });
 }

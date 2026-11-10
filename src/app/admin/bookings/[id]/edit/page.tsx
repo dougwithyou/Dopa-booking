@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { landingPageLabel } from '@/components/admin/lib/data';
+import { getLocations, landingPageLabel } from '@/components/admin/lib/data';
 import BookingEditForm from '@/components/admin/BookingEditForm';
+import RescheduleCard from '@/components/admin/RescheduleCard';
 import { formatCents, formatDate, formatTime } from '@/components/admin/lib/format';
 import { cardCls } from '@/components/admin/lib/ui';
 
@@ -32,6 +33,7 @@ export default async function EditBookingPage({ params }: { params: { id: string
       .eq('booking_id', booking.id)
       .eq('status', 'paid'),
   ]);
+  const allLocations = await getLocations(supabase, booking.studio_id);
   const extras = (paidExtras as { amount_cents: number; stripe_payment_intent_id: string | null }[] | null) ?? [];
 
   return (
@@ -84,6 +86,15 @@ export default async function EditBookingPage({ params }: { params: { id: string
           </div>
         </dl>
       </div>
+
+      {booking.status !== 'cancelled' && (
+        <RescheduleCard
+          bookingId={booking.id}
+          locations={allLocations.filter((l) => l.is_active || l.id === booking.location_id)}
+          currentLocationId={booking.location_id}
+          clientEmail={client?.email ?? null}
+        />
+      )}
 
       <BookingEditForm
         booking={booking}
