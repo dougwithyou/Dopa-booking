@@ -1,3 +1,4 @@
+import { STUDIO_TZ } from '@/lib/time';
 import { formatCents } from '@/lib/formatMoney';
 
 export interface ContractVariableContext {
@@ -29,7 +30,7 @@ export function renderContractVariables(content: string, ctx: ContractVariableCo
     amount:
       ctx.amountCents != null ? formatCents(ctx.amountCents, ctx.currency || 'usd', 'en') : '',
     date: ctx.sessionDate
-      ? new Date(ctx.sessionDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+      ? new Date(ctx.sessionDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: STUDIO_TZ })
       : '',
     session_type: ctx.sessionType?.trim() || '',
     location: ctx.location?.trim() || '',

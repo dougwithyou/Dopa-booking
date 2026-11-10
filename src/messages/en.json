@@ -84,7 +84,8 @@
       "selectDate": "Select a date",
       "selectTime": "Select a time",
       "next": "Continue",
-      "taken": "Taken"
+      "taken": "Taken",
+      "tzNote": "Times are in Eastern Time (Washington, DC)."
     },
     "contact": {
       "heading": "Your info",

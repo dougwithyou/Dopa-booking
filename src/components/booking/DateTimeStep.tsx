@@ -255,6 +255,7 @@ export function DateTimeStep({
               <div className="mb-2 font-body text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
                 {t('selectTime')}
               </div>
+              <p className="mb-3 font-body text-xs text-ink/50">{t('tzNote')}</p>
               <div className="flex flex-wrap gap-2">
                 {byDate.get(selectedDate)!.map((slot) => {
                   const active = slot.id === selectedSlotId;

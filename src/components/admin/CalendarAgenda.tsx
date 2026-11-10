@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import type { EnrichedBooking } from './lib/data';
 import { formatTime } from './lib/format';
+import { formatStudio, studioDateKey, studioTodayKey } from '@/lib/time';
 import { cardCls } from './lib/ui';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -13,7 +14,7 @@ function bookingDate(b: EnrichedBooking): Date {
   return new Date(b.slot?.start_time ?? b.created_at);
 }
 
-/** Local-calendar day key, e.g. "2026-10-20". */
+/** Key of a month-grid cell (a plain calendar date), e.g. "2026-10-20". */
 function dayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
@@ -28,7 +29,8 @@ function groupByDay(bookings: EnrichedBooking[]): Map<string, EnrichedBooking[]>
   const sorted = [...bookings].sort((a, b) => bookingDate(a).getTime() - bookingDate(b).getTime());
   const map = new Map<string, EnrichedBooking[]>();
   for (const b of sorted) {
-    const key = dayKey(bookingDate(b));
+    // Sessions are grouped by their day in the studio timezone.
+    const key = studioDateKey(bookingDate(b));
     map.set(key, [...(map.get(key) ?? []), b]);
   }
   return map;
@@ -63,10 +65,8 @@ function DayGroup({ date, bookings }: { date: Date; bookings: EnrichedBooking[] 
   return (
     <div className="flex gap-4">
       <div className="w-12 shrink-0 border-r border-gray-200 pr-3 text-center">
-        <div className="text-2xl font-bold leading-tight text-gray-900">{date.getDate()}</div>
-        <div className="text-xs uppercase tracking-wide text-gray-500">
-          {date.toLocaleDateString('en-US', { weekday: 'short' })}
-        </div>
+        <div className="text-2xl font-bold leading-tight text-gray-900">{formatStudio(date, 'd')}</div>
+        <div className="text-xs uppercase tracking-wide text-gray-500">{formatStudio(date, 'EEE')}</div>
       </div>
       <div className="min-w-0 flex-1 space-y-2">
         {bookings.map((b) => (
@@ -81,12 +81,12 @@ export default function CalendarAgenda({ bookings }: { bookings: EnrichedBooking
   const [view, setView] = useState<'upcoming' | 'month'>('upcoming');
   const today = startOfToday();
   const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
-  const [selectedDay, setSelectedDay] = useState<string | null>(dayKey(today));
+  const [selectedDay, setSelectedDay] = useState<string | null>(studioTodayKey());
 
   const byDay = useMemo(() => groupByDay(bookings), [bookings]);
 
   const upcoming = useMemo(() => {
-    const todayKey = dayKey(startOfToday());
+    const todayKey = studioTodayKey();
     return [...byDay.entries()].filter(([key]) => key >= todayKey);
   }, [byDay]);
 
@@ -173,7 +173,7 @@ export default function CalendarAgenda({ bookings }: { bookings: EnrichedBooking
                 const key = dayKey(date);
                 const count = byDay.get(key)?.length ?? 0;
                 const past = date < today;
-                const isToday = key === dayKey(today);
+                const isToday = key === studioTodayKey();
                 const selected = key === selectedDay;
                 return (
                   <button

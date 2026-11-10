@@ -1,17 +1,19 @@
-import { format } from 'date-fns';
-import { enUS, es } from 'date-fns/locale';
+import { formatStudio, studioDateKey } from '@/lib/time';
 
-/** Local-day grouping key for an ISO timestamp (uses the browser's local timezone). */
+// All booking-flow times are shown in the studio's timezone (see
+// src/lib/time.ts), whatever timezone the visitor's device is set to.
+
+/** Studio-local day grouping key for an ISO timestamp. */
 export function dateKey(iso: string): string {
-  return format(new Date(iso), 'yyyy-MM-dd');
+  return studioDateKey(iso);
 }
 
 export function formatDateLabel(iso: string, locale: string): string {
-  return format(new Date(iso), 'EEEE, MMM d', { locale: locale === 'es' ? es : enUS });
+  return formatStudio(iso, 'EEEE, MMM d', locale);
 }
 
 export function formatTimeLabel(iso: string): string {
-  return format(new Date(iso), 'h:mm a');
+  return formatStudio(iso, 'h:mm a');
 }
 
 export function formatDateTimeLabel(iso: string, locale: string): string {

@@ -84,7 +84,8 @@
       "selectDate": "Selecciona una fecha",
       "selectTime": "Selecciona una hora",
       "next": "Continuar",
-      "taken": "Ocupado"
+      "taken": "Ocupado",
+      "tzNote": "Horarios en hora del este (Washington, DC)."
     },
     "contact": {
       "heading": "Tus datos",

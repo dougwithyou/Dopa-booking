@@ -1,3 +1,4 @@
+import { studioHour } from '@/lib/time';
 // Aggregation helpers for the dashboard + stats page. All aggregation
 // happens in JS over already-fetched rows (small-business data volumes),
 // keeping the Supabase queries simple and fully typed.
@@ -175,7 +176,7 @@ export function bookingsByHourOfDay(bookings: EnrichedBooking[]): HourTotal[] {
   const counts = new Array(24).fill(0);
   for (const b of bookings) {
     if (b.status === 'cancelled' || !b.slot) continue;
-    const hour = new Date(b.slot.start_time).getHours();
+    const hour = studioHour(b.slot.start_time);
     counts[hour] += 1;
   }
   return counts

@@ -1,5 +1,6 @@
 'use client';
 
+import { studioDateKey } from '@/lib/time';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Ban, Plus, Trash2, CheckCircle2, CalendarPlus } from 'lucide-react';
@@ -160,12 +161,10 @@ export default function AvailabilityManager({
   const grouped = useMemo(() => {
     const by: Record<string, AvailabilitySlot[]> = {};
     for (const s of slots) {
-      const day = new Date(s.start_time).toDateString();
+      const day = studioDateKey(s.start_time);
       (by[day] ||= []).push(s);
     }
-    return Object.entries(by).sort(
-      (a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime()
-    );
+    return Object.entries(by).sort((a, b) => a[0].localeCompare(b[0]));
   }, [slots]);
 
   async function handleAdd() {

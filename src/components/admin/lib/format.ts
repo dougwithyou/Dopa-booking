@@ -1,4 +1,7 @@
-// Money / date formatting helpers shared across the admin panel.
+// Money / date formatting helpers shared across the admin panel. Dates and
+// times are always shown in the studio timezone (src/lib/time.ts) — these
+// run both on the server (UTC) and in the admin's browser.
+import { STUDIO_TZ, studioDateTimeToIso } from '@/lib/time';
 
 export function formatCents(cents: number | null | undefined, currency = 'usd'): string {
   const value = (cents ?? 0) / 100;
@@ -24,7 +27,7 @@ export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: STUDIO_TZ });
 }
 
 export function formatDateTime(iso: string | null | undefined): string {
@@ -37,6 +40,7 @@ export function formatDateTime(iso: string | null | undefined): string {
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    timeZone: STUDIO_TZ,
   });
 }
 
@@ -44,7 +48,7 @@ export function formatTime(iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: STUDIO_TZ });
 }
 
 // For <input type="date"> / <input type="time"> value props.
@@ -62,10 +66,10 @@ export function toTimeInputValue(d: Date): string {
 }
 
 // Combine a date-input value ("2026-08-17") and time-input value ("14:30")
-// into an ISO timestamp string in the browser's local timezone.
+// into an ISO timestamp, read as studio wall-clock time (not the admin's
+// device timezone), so slots land at the right time wherever they're made.
 export function combineDateTimeLocal(dateStr: string, timeStr: string): string {
-  const d = new Date(`${dateStr}T${timeStr}:00`);
-  return d.toISOString();
+  return studioDateTimeToIso(dateStr, timeStr);
 }
 
 export function monthKey(iso: string): string {
