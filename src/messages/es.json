@@ -1,7 +1,30 @@
 {
   "home": {
+    "metaTitle": "Dopa Studio — Sesiones de fotos",
+    "eyebrow": "Reserva tu sesión",
+    "title": "Elige tu **sesión**",
+    "lead": "Sesiones de fotos en el DMV para familias, parejas y momentos que quieres guardar. Elige una, mira los detalles y aparta tu fecha en minutos.",
     "placeholderTitle": "Dopa Studio",
-    "placeholderBody": "Todavía no hay páginas de sesión publicadas — vuelve pronto."
+    "placeholderBody": "Pronto publicaremos nuevas sesiones. Mientras tanto, cuéntanos qué sesión te gustaría abajo.",
+    "discountBadge": "{value} de descuento · {code}",
+    "upTo": "hasta {count} personas",
+    "cta": "Ver sesión",
+    "requestEyebrow": "¿No ves la que buscas?",
+    "requestTitle": "Pide tu sesión **ideal**",
+    "requestLead": "Cuéntanos qué tipo de sesión tienes en mente y para cuándo. Te escribimos con disponibilidad y precio.",
+    "form": {
+      "sessionType": "Tipo de sesión",
+      "sessionTypePlaceholder": "Ej.: maternidad, cumpleaños, retrato profesional…",
+      "date": "Fecha estimada",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "email": "Correo",
+      "phone": "Teléfono",
+      "submit": "Enviar solicitud",
+      "sending": "Enviando…",
+      "success": "¡Gracias! Recibimos tu solicitud y te escribiremos pronto. Revisa tu correo: te enviamos una confirmación.",
+      "error": "No pudimos enviar tu solicitud. Intenta de nuevo en un momento."
+    }
   },
   "landing": {
     "topmark": {

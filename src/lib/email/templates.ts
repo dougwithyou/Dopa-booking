@@ -813,3 +813,87 @@ export function buildBookingRescheduledEmail(params: {
   const text = [copy.greeting(name), '', copy.intro, '', ...rows.map(([l, v]) => `${l}: ${v}`), '', copy.closing, '', copy.signoff].join('\n');
   return { subject: copy.subject, html, text };
 }
+
+// ---------------------------------------------------------------------------
+// Session request (catalog contact form): admin alert + client acknowledgment
+// ---------------------------------------------------------------------------
+
+function requestDate(date: string | null, locale: Locale): string {
+  if (!date) return locale === 'es' ? 'Sin fecha definida' : 'No date yet';
+  return new Intl.DateTimeFormat(locale === 'es' ? 'es-US' : 'en-US', { dateStyle: 'long', timeZone: 'UTC' }).format(
+    new Date(`${date}T00:00:00Z`)
+  );
+}
+
+export function buildAdminSessionRequestEmail(params: {
+  sessionType: string;
+  preferredDate: string | null;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  locale: Locale;
+}): EmailContent {
+  const name = `${params.firstName} ${params.lastName}`.trim();
+  const summary = `New session request: ${params.sessionType} — ${name}`;
+  const rows: Array<[string, string]> = [
+    ['Session', params.sessionType],
+    ['Estimated date', requestDate(params.preferredDate, 'en')],
+    ['Name', name],
+    ['Email', params.email],
+    ['Phone', params.phone || '—'],
+    ['Language', params.locale === 'es' ? 'Spanish' : 'English'],
+  ];
+  const html = renderHtmlEmail({
+    heading: 'New session request',
+    bodyHtml: `<p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(summary)}</p>${detailsBlockHtml(rows)}<p style="margin:12px 0 0;font-size:14px;line-height:1.5;">Reply to this client directly, or see all requests in Admin → Requests.</p>`,
+  });
+  return { subject: summary, html, text: [summary, '', ...rows.map(([l, v]) => `${l}: ${v}`)].join('\n') };
+}
+
+const requestAckCopy = {
+  en: {
+    subject: 'We got your session request — Dopa Studio',
+    heading: 'Thanks! We got your request',
+    greeting: (n: string) => `Hi ${n},`,
+    intro: "Thanks for reaching out. We'll review your request and get back to you soon with availability and details.",
+    labels: { session: 'Session', date: 'Estimated date' },
+    closing: 'Anything to add? Just reply to this email.',
+    signoff: '— Doug & Paola, Dopa Studio',
+  },
+  es: {
+    subject: 'Recibimos tu solicitud de sesión — Dopa Studio',
+    heading: '¡Gracias! Recibimos tu solicitud',
+    greeting: (n: string) => `Hola ${n},`,
+    intro: 'Gracias por escribirnos. Revisaremos tu solicitud y te contactaremos pronto con disponibilidad y detalles.',
+    labels: { session: 'Sesión', date: 'Fecha estimada' },
+    closing: '¿Quieres agregar algo? Solo responde a este correo.',
+    signoff: '— Doug & Paola, Dopa Studio',
+  },
+} as const;
+
+export function buildSessionRequestAckEmail(params: {
+  firstName: string;
+  sessionType: string;
+  preferredDate: string | null;
+  locale: Locale;
+}): EmailContent {
+  const copy = requestAckCopy[params.locale];
+  const rows: Array<[string, string]> = [
+    [copy.labels.session, params.sessionType],
+    [copy.labels.date, requestDate(params.preferredDate, params.locale)],
+  ];
+  const html = renderHtmlEmail({
+    preheading: copy.intro,
+    heading: copy.heading,
+    bodyHtml: `
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.greeting(params.firstName))}</p>
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(copy.intro)}</p>
+      ${detailsBlockHtml(rows)}
+      <p style="margin:16px 0 4px;font-size:15px;line-height:1.5;">${escapeHtml(copy.closing)}</p>
+      <p style="margin:16px 0 0;font-size:15px;line-height:1.5;">${copy.signoff}</p>
+    `,
+  });
+  const text = [copy.greeting(params.firstName), '', copy.intro, '', ...rows.map(([l, v]) => `${l}: ${v}`), '', copy.closing, '', copy.signoff].join('\n');
+  return { subject: copy.subject, html, text };
+}

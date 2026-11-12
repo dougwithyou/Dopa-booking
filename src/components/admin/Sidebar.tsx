@@ -18,12 +18,14 @@ import {
   PackageCheck,
   FileSignature,
   Receipt,
+  Inbox,
 } from 'lucide-react';
 import SignOutButton from './SignOutButton';
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/admin/calendar', label: 'Calendar', icon: CalendarDays },
+  { href: '/admin/requests', label: 'Requests', icon: Inbox },
   { href: '/admin/locations', label: 'Locations', icon: MapPin },
   { href: '/admin/landing-pages', label: 'Landing Pages', icon: FileText },
   { href: '/admin/discount-codes', label: 'Discount Codes', icon: Tag },

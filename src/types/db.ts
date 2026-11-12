@@ -232,6 +232,24 @@ export type BookingStatus = 'pending' | 'confirmed' | 'cancelled';
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void';
 
+export type SessionRequestStatus = 'new' | 'contacted' | 'closed';
+
+/** A "different session" request from the public session catalog. */
+export type SessionRequest = {
+  id: string;
+  studio_id: string;
+  client_id: string | null;
+  session_type: string;
+  preferred_date: string | null;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string | null;
+  locale: Locale;
+  status: SessionRequestStatus;
+  created_at: string;
+};
+
 /** One line of an invoice; amounts in cents. */
 export type InvoiceItem = { description: string; quantity: number; unit_cents: number };
 
@@ -396,6 +414,7 @@ export interface Database {
       page_views: { Row: PageView; Insert: Partial<PageView>; Update: Partial<PageView>; Relationships: Relationships };
       contracts: { Row: Contract; Insert: Partial<Contract>; Update: Partial<Contract>; Relationships: Relationships };
       invoices: { Row: Invoice; Insert: Partial<Invoice>; Update: Partial<Invoice>; Relationships: Relationships };
+      session_requests: { Row: SessionRequest; Insert: Partial<SessionRequest>; Update: Partial<SessionRequest>; Relationships: Relationships };
     };
     Views: Record<string, never>;
     Functions: {

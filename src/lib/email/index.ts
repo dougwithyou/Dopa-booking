@@ -6,6 +6,8 @@ import {
   type BookingEmailExtra,
   buildAbandonedCartEmail,
   buildAdminInvoicePaidEmail,
+  buildAdminSessionRequestEmail,
+  buildSessionRequestAckEmail,
   buildInvoiceEmail,
   buildInvoicePaidEmail,
   buildAdminBookingNotificationEmail,
@@ -169,4 +171,22 @@ export async function sendBookingRescheduled(params: {
 }): Promise<void> {
   const { to, ...rest } = params;
   await sendEmailSafe({ to, content: buildBookingRescheduledEmail({ ...rest, locale: resolveLocale(params.locale) }) });
+}
+
+/** Catalog "different session" request: alert to the admin, acknowledgment to the client. */
+export async function sendSessionRequestEmails(params: {
+  sessionType: string;
+  preferredDate: string | null;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  locale: Locale;
+}): Promise<void> {
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  if (adminEmail) await sendEmailSafe({ to: adminEmail, content: buildAdminSessionRequestEmail(params) });
+  await sendEmailSafe({
+    to: params.email,
+    content: buildSessionRequestAckEmail({ ...params, locale: resolveLocale(params.locale) }),
+  });
 }
