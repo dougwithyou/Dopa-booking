@@ -15,6 +15,32 @@ import { useEffect, useRef, type ReactNode } from 'react';
 export function HeroScrollReveal({ children, pinFraction = 0.35 }: { children: ReactNode; pinFraction?: number }) {
   const outerRef = useRef<HTMLDivElement>(null);
 
+  // Size the hero to the screen the visitor actually sees. Viewport units
+  // fall short on phones: iOS Safari's floating toolbars let the page show
+  // behind them, so 100svh left a strip of page background under the hero.
+  // Measure once, then only grow (toolbars collapsing) or re-measure on a
+  // width change (rotation) — shrinking on every toolbar move would jitter.
+  useEffect(() => {
+    const outer = outerRef.current;
+    if (!outer) return;
+    let width = window.innerWidth;
+    let height = 0;
+    const measure = () => {
+      const visible = Math.max(window.innerHeight, document.documentElement.clientHeight);
+      if (window.innerWidth !== width) {
+        width = window.innerWidth;
+        height = 0;
+      }
+      if (visible > height) {
+        height = visible;
+        outer.style.setProperty('--hero-h', `${visible}px`);
+      }
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
   useEffect(() => {
     const outer = outerRef.current;
     if (!outer) return;
@@ -53,9 +79,10 @@ export function HeroScrollReveal({ children, pinFraction = 0.35 }: { children: R
     <div
       ref={outerRef}
       className="hero-reveal relative"
-      style={{ height: `calc(max(100svh, 640px) + ${pinFraction * 100}svh)` }}
+      // --hero-h: measured visible height (set above); 100dvh until then.
+      style={{ height: `calc(max(var(--hero-h, 100dvh), 640px) * ${1 + pinFraction})` }}
     >
-      <div className="sticky top-0 h-[100svh] min-h-[640px] overflow-hidden">{children}</div>
+      <div className="sticky top-0 h-[var(--hero-h,100dvh)] min-h-[640px] overflow-hidden">{children}</div>
     </div>
   );
 }
