@@ -120,6 +120,8 @@ export type LandingPage = {
   /** People covered by base_price_cents; each extra person adds extra_person_price_cents. */
   /** Show the session price on the landing page's closer ticket. */
   show_price: boolean;
+  /** Position on the public session catalog (lower first; null = last). */
+  catalog_position: number | null;
   /** "What's included" bullets shown on the closer ticket. */
   included_items: IncludedItem[];
   included_people: number;

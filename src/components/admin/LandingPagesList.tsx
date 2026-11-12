@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { LandingPage, LandingPageStatus } from '@/types/db';
 import { formatDate } from './lib/format';
@@ -36,6 +36,29 @@ export default function LandingPagesList({ initialPages }: { initialPages: Landi
     router.refresh();
   }
 
+  // Reorders the catalog: swaps two neighbours, then saves sequential
+  // positions (1..n) for every page whose position changed.
+  async function move(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= pages.length) return;
+    const next = [...pages];
+    [next[index], next[target]] = [next[target], next[index]];
+    const renumbered = next.map((p, i) => ({ ...p, catalog_position: i + 1 }));
+    const changed = renumbered.filter((p, i) => next[i].catalog_position !== i + 1);
+    setPages(renumbered);
+    const supabase = createClient();
+    const results = await Promise.all(
+      changed.map((p) => supabase.from('landing_pages').update({ catalog_position: p.catalog_position }).eq('id', p.id))
+    );
+    const failed = results.find((r) => r.error);
+    if (failed?.error) {
+      setError(failed.error.message);
+      setPages(pages);
+      return;
+    }
+    router.refresh();
+  }
+
   async function handleDelete(id: string) {
     if (!confirm('Delete this landing page? This cannot be undone.')) return;
     const supabase = createClient();
@@ -52,7 +75,10 @@ export default function LandingPagesList({ initialPages }: { initialPages: Landi
     <div className="space-y-4">
       {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-gray-500">
+          Use the arrows to set the order of the sessions on the booking home page (published ones are shown).
+        </p>
         <Link href="/admin/landing-pages/new" className={btnPrimary}>
           <Plus className="h-4 w-4" /> New landing page
         </Link>
@@ -62,6 +88,7 @@ export default function LandingPagesList({ initialPages }: { initialPages: Landi
         <table className="w-full">
           <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
+              <th className={thCls}>Order</th>
               <th className={thCls}>Headline</th>
               <th className={thCls}>Slug</th>
               <th className={thCls}>Template</th>
@@ -71,8 +98,31 @@ export default function LandingPagesList({ initialPages }: { initialPages: Landi
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {pages.map((p) => (
+            {pages.map((p, idx) => (
               <tr key={p.id}>
+                <td className={tdCls}>
+                  <div className="flex items-center gap-1">
+                    <span className="w-5 text-right text-xs tabular-nums text-gray-400">{idx + 1}</span>
+                    <button
+                      type="button"
+                      className={btnGhost}
+                      aria-label="Move up"
+                      disabled={idx === 0}
+                      onClick={() => move(idx, -1)}
+                    >
+                      <ArrowUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      className={btnGhost}
+                      aria-label="Move down"
+                      disabled={idx === pages.length - 1}
+                      onClick={() => move(idx, 1)}
+                    >
+                      <ArrowDown className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </td>
                 <td className={tdCls}>
                   <Link href={`/admin/landing-pages/${p.id}/edit`} className="font-medium text-gray-900 hover:underline">
                     {p.headline_en || '(untitled)'}
@@ -115,7 +165,7 @@ export default function LandingPagesList({ initialPages }: { initialPages: Landi
             ))}
             {pages.length === 0 && (
               <tr>
-                <td className={tdCls} colSpan={6}>
+                <td className={tdCls} colSpan={7}>
                   No landing pages yet.
                 </td>
               </tr>

@@ -178,6 +178,7 @@ export async function getLandingPages(supabase: SB, studioId: string): Promise<L
     .from('landing_pages')
     .select('*')
     .eq('studio_id', studioId)
+    .order('catalog_position', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
   return data ?? [];
 }

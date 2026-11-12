@@ -24,7 +24,8 @@ export async function generateMetadata({ params: { locale } }: { params: { local
  * Session catalog (book.hidopastudio.com): one card per published landing
  * page — photo, label, headline, price (with the page's active discount)
  * and a link to it — plus a "looking for a different session?" request
- * form. Newest first; drafts and archived pages never show.
+ * form. In the order set in Admin → Landing Pages (catalog_position);
+ * drafts and archived pages never show.
  */
 export default async function SessionCatalogPage({ params: { locale } }: { params: { locale: string } }) {
   // Always render per request: the [locale] layout pre-generates en/es at
@@ -38,6 +39,7 @@ export default async function SessionCatalogPage({ params: { locale } }: { param
     .from('landing_pages')
     .select('*')
     .eq('status', 'published')
+    .order('catalog_position', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
   const pages = (data as LandingPage[] | null) ?? [];
 
